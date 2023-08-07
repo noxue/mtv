@@ -1,0 +1,19 @@
+[package]
+name = "sqlrs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1", default-features = false }
+tokio-postgres = { version = "*", features = [
+    "with-time-0_3",
+    "runtime",
+    "with-serde_json-1",
+    "array-impls",
+    "with-chrono-0_4",
+] }
+anyhow = "1"
+lazy_static = "1"
+sqlrs-macros = { path = "../sqlrs-macros" }

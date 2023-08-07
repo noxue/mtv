@@ -1,0 +1,3 @@
+
+[workspace]
+members = ["mtv", "sqlrs", "sqlrs-macros", "mtv-dao"]
