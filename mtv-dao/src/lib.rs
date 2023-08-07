@@ -57,7 +57,7 @@ pub struct User {
     id: i32,
     name: String,
     age: i32,
-    info: UserInfo,
+    // info: UserInfo,
     // created_at: chrono::DateTime<Local>,
 }
 
