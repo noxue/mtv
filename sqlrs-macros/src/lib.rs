@@ -1,8 +1,8 @@
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{quote, spanned::Spanned, ToTokens};
 use syn::{parse_macro_input, DeriveInput};
 
-#[proc_macro_derive(Table)]
+#[proc_macro_derive(Table, attributes(sql_json))]
 pub fn table(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as DeriveInput);
@@ -19,11 +19,28 @@ pub fn table(input: TokenStream) -> TokenStream {
     let mut struct_init = quote!();
     let mut index = 0usize;
     for field in fields.clone() {
+        let mut is_json = false;
+
         let name = field.ident.unwrap();
+
+        field.attrs.iter().for_each(|v| {
+            if v.path().is_ident("sql_json") {
+                is_json = true;
+            }
+        });
+
         fields_vec_innards.extend(quote!(stringify!(#name),));
-        struct_init.extend(quote!(
-            #name:row.try_get(#index)?,
-        ));
+
+        if is_json {
+            struct_init.extend(quote!(
+                #name:serde_json::from_value(row.try_get(#index)?).unwrap(),
+            ));
+        } else {
+            struct_init.extend(quote!(
+                #name:row.try_get(#index)?,
+            ));
+        }
+
         index += 1;
     }
     let fields_vec = quote!(vec![#fields_vec_innards]);
@@ -61,6 +78,7 @@ pub fn table(input: TokenStream) -> TokenStream {
     // Hand the output tokens back to the compiler
     TokenStream::from(expanded)
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

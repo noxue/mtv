@@ -1,3 +1,5 @@
+extern crate sqlrs_macros;
+
 use chrono::{Local, NaiveTime};
 use postgres_types::FromSql;
 use serde::{Deserialize, Serialize};
@@ -10,8 +12,8 @@ pub async fn test() {
     // down().await;
     // up().await;
     // test_insert().await;
-    // test_select().await;
-    test_find_one().await;
+    test_select().await;
+    // test_find_one().await;
     // test_macro().await;
     // let db = Db::get_conn();
 
@@ -48,6 +50,7 @@ pub async fn test_insert() {
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 struct UserInfo {
+    #[serde(rename = "name")]
     name: String,
     password: String,
 }
@@ -57,8 +60,9 @@ pub struct User {
     id: i32,
     name: String,
     age: i32,
-    // info: UserInfo,
-    // created_at: chrono::DateTime<Local>,
+    #[sql_json]
+    info: UserInfo,
+    created_at: chrono::DateTime<Local>,
 }
 
 pub async fn test_macro() {
@@ -78,6 +82,7 @@ pub async fn test_find_one() {
         .unwrap()
         .try_into()
         .unwrap();
+
     dbg!(user);
 }
 
