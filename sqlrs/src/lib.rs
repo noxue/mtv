@@ -1,11 +1,11 @@
 pub mod crud;
 
+pub use sqlrs_macros::Table;
 use std::sync::{Mutex, MutexGuard};
 use tokio::sync::OnceCell;
 use tokio_postgres::{Client, NoTls};
 
 static DB: OnceCell<Mutex<Db>> = OnceCell::const_new();
-
 
 #[derive(Debug)]
 pub struct Db {
@@ -44,5 +44,3 @@ impl std::ops::DerefMut for Db {
         &mut self.client
     }
 }
-
-

@@ -1,19 +1,23 @@
-extern crate sqlrs_macros;
+pub mod user;
+
 
 use chrono::{Local, NaiveTime};
 use postgres_types::FromSql;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sqlrs::Db;
-use sqlrs_macros::Table;
+use sqlrs::{Db, Table};
+
 use std::time::SystemTime;
 
 pub async fn test() {
-    // down().await;
-    // up().await;
-    // test_insert().await;
-    test_select().await;
-    // test_find_one().await;
+    down().await;
+    up().await;
+    // for i in 1..10 {
+        test_insert().await;
+    // }
+
+    // test_select().await;
+    test_find_one().await;
     // test_macro().await;
     // let db = Db::get_conn();
 
@@ -28,19 +32,21 @@ pub async fn test() {
 pub async fn test_insert() {
     let db = Db::get_conn();
 
-    let info = UserInfo {
-        name: "张三".to_string(),
-        password: "123456".to_string(),
+    let auth = Auth {
+        phone: None,
+        password: None,
+        wechat_unionid: Some("xxxxxxxxxxx".to_string()),
+        wechat_openid: None,
     };
 
-    let info = json!(info);
+    let auth = json!(auth);
 
     let modified = db
         .execute(
             r#"
-    insert into users (name, age, info) values ($1, $2, $3)
+    insert into users (nickname, auth) values ($1, $2)
     "#,
-            &[&"张三", &7, &info],
+            &[&"张三", &auth],
         )
         .await
         .unwrap();
@@ -48,21 +54,27 @@ pub async fn test_insert() {
     dbg!(modified);
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
-struct UserInfo {
-    #[serde(rename = "name")]
-    name: String,
-    password: String,
-}
-
+// 根据表生成结构体User和Auth
 #[derive(Debug, Table)]
 pub struct User {
     id: i32,
-    name: String,
-    age: i32,
+    nickname: Option<String>,
+    avatar: Option<String>,
+    score: i32,
+    vip: i32,
+    vip_expire_time: chrono::DateTime<Local>,
     #[sql_json]
-    info: UserInfo,
-    created_at: chrono::DateTime<Local>,
+    auth: Auth,
+    create_time: chrono::DateTime<Local>,
+    update_time: chrono::DateTime<Local>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Auth {
+    phone: Option<String>,
+    password: Option<String>,
+    wechat_unionid: Option<String>,
+    wechat_openid: Option<String>,
 }
 
 pub async fn test_macro() {
@@ -76,20 +88,22 @@ pub async fn test_find_one() {
     let db = Db::get_conn();
 
     let sql = format!("select {} from users where id = $1", User::get_columns());
-    let user: User = db
-        .query_one(&sql, &[&1i32])
+    let row = db
+        .query_one(&sql, &[&1])
         .await
-        .unwrap()
-        .try_into()
-        .unwrap();
+        .unwrap_or_else(|_| panic!("未找到用户"));
 
+    let user: User = row.try_into().unwrap();
     dbg!(user);
 }
 
 pub async fn test_select() {
     let db = Db::get_conn();
 
-    let sql = format!("select {} from users", User::get_columns());
+    let sql = format!(
+        "select {} from users order by id asc limit 5",
+        User::get_columns()
+    );
 
     let rows = db.query(&sql, &[]).await.unwrap();
 
@@ -102,34 +116,21 @@ pub async fn up() {
     let db = Db::get_conn();
 
     let modified = db
-        .execute(
-            r#"
-    create table if not exists users (
-        id serial primary key,
-        name varchar not null,
-        info json not null,
-        age int not null,
-        created_at timestamp with time zone not null default now()
-    )
-    "#,
-            &[],
-        )
+    // init.sql
+        .batch_execute(include_str!( "../up.sql"))
         .await
         .unwrap();
 
     dbg!(modified);
+
+   
 }
 
 pub async fn down() {
     let db = Db::get_conn();
 
     let modified = db
-        .execute(
-            r#"
-    drop table if exists users
-    "#,
-            &[],
-        )
+        .batch_execute(include_str!("../down.sql"))
         .await
         .unwrap();
 

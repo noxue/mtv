@@ -1,10 +1,9 @@
 use proc_macro::TokenStream;
-use quote::{quote, spanned::Spanned, ToTokens};
+use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
 #[proc_macro_derive(Table, attributes(sql_json))]
 pub fn table(input: TokenStream) -> TokenStream {
-    // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as DeriveInput);
 
     let name = input.ident;
@@ -12,7 +11,7 @@ pub fn table(input: TokenStream) -> TokenStream {
 
     let fields = match data {
         syn::Data::Struct(syn::DataStruct { fields, .. }) => fields,
-        _ => panic!("only support struct"),
+        _ => panic!("只能用于结构体"),
     };
 
     let mut fields_vec_innards = quote!();
