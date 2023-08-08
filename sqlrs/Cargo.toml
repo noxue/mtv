@@ -17,3 +17,4 @@ tokio-postgres = { version = "*", features = [
 anyhow = "1"
 lazy_static = "1"
 sqlrs-macros = { path = "../sqlrs-macros" }
+log="*"

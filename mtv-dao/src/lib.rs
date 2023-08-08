@@ -1,23 +1,32 @@
 pub mod user;
 
-
 use chrono::{Local, NaiveTime};
 use postgres_types::FromSql;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sqlrs::{Db, Table};
+use sqlrs::{transaction, Db, Table};
 
 use std::time::SystemTime;
 
-pub async fn test() {
-    down().await;
-    up().await;
-    // for i in 1..10 {
-        test_insert().await;
-    // }
+use crate::user::set_password;
 
-    // test_select().await;
-    test_find_one().await;
+pub async fn test() {
+    let mut db = Db::get_conn();
+    // 开启事务
+
+    transaction!(db, {
+        set_password(&db, 1, "admin1").await.unwrap();
+        let user = user::get(&db, 1).await.unwrap();
+        // assert_eq!(user.auth.password, Some("admin1".to_string()));
+    });
+    // down().await;
+    // up().await;
+    // // for i in 1..10 {
+    //     test_insert().await;
+    // // }
+
+    // // test_select().await;
+    // test_find_one().await;
     // test_macro().await;
     // let db = Db::get_conn();
 
@@ -116,23 +125,18 @@ pub async fn up() {
     let db = Db::get_conn();
 
     let modified = db
-    // init.sql
-        .batch_execute(include_str!( "../up.sql"))
+        // init.sql
+        .batch_execute(include_str!("../up.sql"))
         .await
         .unwrap();
 
     dbg!(modified);
-
-   
 }
 
 pub async fn down() {
     let db = Db::get_conn();
 
-    let modified = db
-        .batch_execute(include_str!("../down.sql"))
-        .await
-        .unwrap();
+    let modified = db.batch_execute(include_str!("../down.sql")).await.unwrap();
 
     dbg!(modified);
 }
