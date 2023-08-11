@@ -1,14 +1,11 @@
 pub mod user;
 
+use crate::user::set_password;
 use chrono::{Local, NaiveTime};
 use postgres_types::FromSql;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sqlrs::{transaction, Db, Table};
-
-use std::time::SystemTime;
-
-use crate::user::set_password;
+pub use sqlrs::{transaction, Db, Table};
 
 pub async fn test() {
     let mut db = Db::get_conn();
@@ -19,6 +16,7 @@ pub async fn test() {
         let user = user::get(&db, 1).await.unwrap();
         // assert_eq!(user.auth.password, Some("admin1".to_string()));
     });
+
     // down().await;
     // up().await;
     // // for i in 1..10 {

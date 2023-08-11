@@ -24,12 +24,16 @@ pub struct Auth {
 }
 
 /// 根据unionid创建用户
-pub async fn create_user_by_unionid(conn: &Conn, unionid: &str) -> anyhow::Result<User> {
+pub async fn create_user_by_unionid_and_openid(
+    conn: &Conn,
+    unionid: &str,
+    openid: &str,
+) -> anyhow::Result<User> {
     let auth = Auth {
         phone: None,
         password: None,
         wechat_unionid: Some(unionid.to_string()),
-        wechat_openid: None,
+        wechat_openid: Some(openid.to_string()),
     };
 
     let auth = json!(auth);
@@ -134,18 +138,24 @@ pub async fn get(conn: &Conn, userid: i32) -> anyhow::Result<User> {
 }
 
 /// 根据union获取用户
-pub async fn get_by_unionid(conn: &Conn, unionid: &str) -> anyhow::Result<User> {
+pub async fn get_by_unionid_or_openid(
+    conn: &Conn,
+    unionid: &str,
+    openid: &str,
+) -> anyhow::Result<Option<User>> {
     let row = conn
-        .query_one(
-            r#"
-    select * from users where auth->>'wechat_unionid' = $1
-    "#,
-            &[&unionid],
+        .query_opt(
+            r#" select * from users where auth->>'wechat_unionid' = $1 or auth->>'wechat_openid' = $2 "#,
+            &[&unionid, &openid],
         )
         .await?;
 
-    let user: User = row.try_into()?;
-    Ok(user)
+    if let Some(row) = row {
+        let user: User = row.try_into()?;
+        Ok(Some(user))
+    } else {
+        Ok(None)
+    }
 }
 
 /// 根据id删除用户
@@ -163,6 +173,21 @@ pub async fn delete(conn: &Conn, userid: i32) -> anyhow::Result<()> {
         anyhow::bail!("未找到用户");
     }
 
+    Ok(())
+}
+
+/// 增加减少积分，保证积分不会减少到负数
+pub async fn update_score(conn: &Conn, userid: i32, score: i32) -> anyhow::Result<()> {
+    let row = conn
+        .execute(
+            r#" update users set score = score + $1 where id = $2 and score + $1 >= 0"#,
+            &[&score, &userid],
+        )
+        .await?;
+
+    if row == 0 {
+        anyhow::bail!("积分不足");
+    }
     Ok(())
 }
 
@@ -203,9 +228,24 @@ mod tests {
 
         let conn = Db::get_conn();
         let unionid = "bbbbbbbbbbbbbbbbbbbbbbb";
-        let user = create_user_by_unionid(&conn, unionid).await.unwrap();
+        let user = create_user_by_unionid_and_openid(&conn, unionid, "openid")
+            .await
+            .unwrap();
         assert_eq!(user.auth.wechat_unionid, Some(unionid.to_string()));
         // 删除
         delete(&conn, user.id).await.unwrap();
+    }
+
+    // update_score
+    #[tokio::test]
+    async fn test_update_score() {
+        Db::init("host=localhost user=postgres password=123456 dbname=mtv")
+            .await
+            .unwrap();
+
+        let conn = Db::get_conn();
+        let userid = 1;
+        let score = -100;
+        update_score(&conn, userid, score).await.unwrap();
     }
 }

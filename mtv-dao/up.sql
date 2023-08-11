@@ -232,3 +232,34 @@ ALTER TABLE
     follow_records
 ADD
     CONSTRAINT follow_records_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id);
+
+/*
+ 订单表 orders
+ id
+ user_id         用户编号
+ amount          订单金额
+ order_no        订单编号
+ status          订单状态 0:失败 1:成功
+ create_time     创建时间
+ update_time     更新时间
+ */
+CREATE TABLE orders (
+    id serial PRIMARY KEY,
+    user_id int4 NOT NULL,
+    amount int4 NOT NULL,
+    order_no varchar(50) NOT NULL,
+    status int4 NOT NULL DEFAULT 0,
+    create_time timestamp with time zone not null DEFAULT now(),
+    update_time timestamp with time zone not null DEFAULT now()
+);
+
+-- 外键
+ALTER TABLE
+    orders
+ADD
+    CONSTRAINT orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+
+-- order_no 唯一索引
+CREATE UNIQUE INDEX orders_order_no_uindex ON orders (order_no);
+
+
