@@ -1,5 +1,6 @@
 mod api;
 mod utils;
+mod middleware;
 
 use actix_web::{App, HttpServer};
 use mtv_config::CONFIG;

@@ -1,7 +1,12 @@
-use actix_web::{body::EitherBody, error::JsonPayloadError, HttpRequest, HttpResponse, Responder};
+use actix_web::{
+    body::EitherBody, error::JsonPayloadError, HttpRequest, HttpResponse, Responder,
+};
 use serde::Serialize;
 
 use std::fmt::{Debug, Display};
+
+use mtv_srv::SrvError;
+
 
 #[derive(Debug, Serialize)]
 pub struct Res<T = String>
@@ -44,9 +49,9 @@ where
         self
     }
 
-    pub fn set_err(&mut self, err: &str) -> &mut Self {
-        self.code = -1;
-        self.msg = err.to_owned();
+    pub fn set_err(&mut self, err: &SrvError) -> &mut Self {
+        self.code = err.code();
+        self.msg = err.msg();
         self
     }
 }
@@ -66,28 +71,6 @@ impl<T: Serialize> Responder for Res<T> {
 
             Err(err) => {
                 HttpResponse::from_error(JsonPayloadError::Serialize(err)).map_into_right_body()
-            }
-        }
-    }
-}
-
-
-
-impl<T> From<anyhow::Result<T>> for Res<T>
-where
-    T: Serialize,
-{
-    fn from(res: anyhow::Result<T>) -> Self {
-        match res {
-            Ok(data) => {
-                let mut res = Self::new();
-                res.set_data(data);
-                res
-            }
-            Err(err) => {
-                let mut res = Self::new();
-                res.set_err(&err.to_string());
-                res
             }
         }
     }

@@ -1,22 +1,24 @@
-use anyhow::{Context, Ok};
+use crate::Result;
+use anyhow::Context;
 use mtv_config::CONFIG;
 use mtv_dao::Db;
 use redis::Commands;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
-use crate::utils::REDIS;
+use crate::REDIS;
 
-pub async fn login(code: &str, login_type: &str) -> anyhow::Result<String> {
+pub async fn login(code: &str, login_type: &str) -> Result<String> {
     let (openid, unionid) = match login_type {
-        "weapp" => login_weapp(code).await.context("小程序登录出错"),
-        "mp" => login_mp(code).await.context("公众号登录出错"),
+        "weapp" => login_weapp(code).await?,
+        "mp" => login_mp(code).await?,
         _ => {
-            anyhow::bail!("登录类型不支持")
+            return Err("登录类型不支持".into());
         }
-    }?;
+    };
 
     if openid.is_empty() && unionid.is_empty() {
-        anyhow::bail!("openid和unionid都为空");
+        return Err("openid和unionid都为空".into());
     }
 
     let conn = Db::get_conn();
@@ -35,7 +37,6 @@ pub async fn login(code: &str, login_type: &str) -> anyhow::Result<String> {
     };
 
     let token_key = format!("user_token_{}", user.id);
-    
 
     let token = match REDIS
         .get_connection()
@@ -45,11 +46,21 @@ pub async fn login(code: &str, login_type: &str) -> anyhow::Result<String> {
     {
         Some(v) => v,
         None => {
-            let token = uuid::Uuid::new_v4().to_string();
+            let token = uuid::Uuid::new_v4().to_string().replace("-", "");
             REDIS
                 .get_connection()
                 .context("获取redis连接出错")?
-                .set_ex::<&str, String, ()>(&token_key, token.clone(), 60 * 60 * 24 * 30).context("设置token出错")?;
+                .set_ex::<&str, String, ()>(&token_key, token.clone(), 60 * 60 * 24 * 30)
+                .context("设置token出错")?;
+
+            // 以user_id_{token} 为key 保存用户id，用在中间件中 根据token获取uid
+            let key = format!("user_id_{}", token);
+            REDIS
+                .get_connection()
+                .context("获取redis连接出错")?
+                .set_ex::<String, String, ()>(key, user.id.to_string(), 60 * 60 * 24 * 30)
+                .context("设置token出错")?;
+
             token
         }
     };
@@ -68,22 +79,27 @@ struct WeappLoginResponse {
     errcode: Option<i32>,
     errmsg: Option<String>,
 }
-async fn login_weapp(code: &str) -> anyhow::Result<(String, String)> {
+async fn login_weapp(code: &str) -> Result<(String, String)> {
     let url = format!(
         "https://api.weixin.qq.com/sns/jscode2session?appid={appid}&secret={secret}&js_code={code}&grant_type=authorization_code",
         appid=CONFIG.weapp_appid,
         secret=CONFIG.weapp_secret,
         code=code
     );
-    let res = reqwest::get(url).await?;
+    let res = reqwest::get(url)
+        .await
+        .context("根据code请求微信服务器出错")?;
 
-    let data: WeappLoginResponse = res.json().await?;
+    let data: WeappLoginResponse = res
+        .json()
+        .await
+        .context("根据code获取openid 解析json出错")?;
 
     log::debug!("{:?}", data);
 
     if let Some(errcode) = data.errcode {
         if errcode != 0 {
-            return Err(anyhow::anyhow!("微信登录出错:{}", data.errmsg.unwrap()));
+            return Err(format!("微信登录出错:{}", data.errmsg.unwrap()).into());
         }
     }
 
@@ -106,7 +122,7 @@ struct MpLoginResponse {
     errmsg: Option<String>,
 }
 
-async fn login_mp(code: &str) -> anyhow::Result<(String, String)> {
+async fn login_mp(code: &str) -> Result<(String, String)> {
     let url = format!(
             "https://api.weixin.qq.com/sns/oauth2/access_token?appid={appid}&secret={secret}&code={code}&grant_type=authorization_code",
             appid=CONFIG.weapp_appid,
@@ -120,7 +136,7 @@ async fn login_mp(code: &str) -> anyhow::Result<(String, String)> {
 
     if let Some(errcode) = data.errcode {
         if errcode != 0 {
-            return Err(anyhow::anyhow!("微信登录出错:{}", data.errmsg.unwrap()));
+            return Err(format!("微信登录出错:{}", data.errmsg.unwrap()).into());
         }
     }
 
@@ -128,6 +144,34 @@ async fn login_mp(code: &str) -> anyhow::Result<(String, String)> {
         data.openid.unwrap_or_default(),
         data.unionid.unwrap_or_default(),
     ))
+}
+
+/// 根据token获取uid
+pub fn get_uid(token: &str) -> Result<i32> {
+    let key = format!("user_id_{}", token);
+    let uid: Option<i32> = REDIS
+        .get_connection()
+        .context("获取token链接出错")?
+        .get(&key)
+        .context("根据key获取uid出错")?;
+    Ok(uid.ok_or("token已过期")?)
+}
+
+/// 根据uid查询用户信息
+pub async fn get(uid: i32) -> Result<impl Serialize> {
+    let conn = Db::get_conn();
+    let user = mtv_dao::user::get(&conn, uid)
+        .await
+        .context("根据uid获取用户信息出错")?;
+
+    Ok(json!({
+        "id": user.id,
+        "nickname": user.nickname,
+        "avatar": user.avatar,
+        "score": user.score,
+        "vip": user.vip,
+        "vip_expire_time": user.vip_expire_time,
+    }))
 }
 
 #[cfg(test)]

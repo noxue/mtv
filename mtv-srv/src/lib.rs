@@ -1,2 +1,5 @@
 pub mod users;
-pub mod utils;
+mod utils;
+
+pub use utils::errors::{Result, SrvError};
+pub use utils::REDIS;

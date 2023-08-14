@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlrs::{Conn, Db, Table};
 
-#[derive(Debug, Table)]
+#[derive(Debug, Table, Serialize)]
 pub struct User {
     pub id: i32,
     pub nickname: Option<String>,

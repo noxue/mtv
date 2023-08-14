@@ -1,4 +1,5 @@
 pub mod users;
+pub mod movies;
 
 use actix_web::{web, Scope};
 
@@ -13,7 +14,7 @@ pub fn api() -> Scope {
     .service(
         web::scope("/users")
         .route("/login", web::post().to(users::login))
-        .route("/test", web::get().to(hello))
+        .route("/me", web::get().to(users::me))
         .route("/test", web::get().to(hello))
     )
 }

@@ -1637,6 +1637,7 @@ dependencies = [
 name = "mtv-srv"
 version = "0.1.0"
 dependencies = [
+ "actix-web",
  "anyhow",
  "lazy_static",
  "log",
@@ -1646,6 +1647,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "snafu",
  "tokio",
  "uuid",
 ]
