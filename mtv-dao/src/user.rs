@@ -1,7 +1,10 @@
+use anyhow::Context;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlrs::{Conn, Db, Table};
+
+use crate::Page;
 
 #[derive(Debug, Table, Serialize)]
 pub struct User {
@@ -13,6 +16,9 @@ pub struct User {
     pub vip_expire_time: chrono::DateTime<Local>,
     #[sql_json]
     pub auth: Auth,
+    pub channel: Option<String>,
+    pub create_time: chrono::DateTime<Local>,
+    pub update_time: chrono::DateTime<Local>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -69,19 +75,100 @@ pub async fn update(conn: &Conn, userid: i32, nickname: &str, avatar: &str) -> a
     Ok(())
 }
 
+pub async fn set_channel(conn: &Conn, userid: i32, channel: &str) -> anyhow::Result<()> {
+    let row = conn
+        .execute(
+            r#"
+    update users set channel = $1 where id = $2
+    "#,
+            &[&channel, &userid],
+        )
+        .await?;
+
+    if row == 0 {
+        anyhow::bail!("未找到用户");
+    }
+
+    Ok(())
+}
+
+// 根据渠道列出用户,分页
+pub async fn list_by_channel(
+    conn: &Conn,
+    channel: &str,
+    page: i64,
+    size: i64,
+) -> anyhow::Result<Page<Vec<User>>> {
+    let rows = conn
+        .query_one(
+            r#"
+    select count(*) from users where channel = $1
+    "#,
+            &[&channel],
+        )
+        .await?;
+
+    let total: i64 = rows.get(0);
+
+    let rows = conn
+        .query(
+            r#"
+    select * from users where channel = $1 order by id desc limit $2 offset $3
+    "#,
+            &[&channel, &size, &(&(page - 1) * size)],
+        )
+        .await?;
+
+    let users: Vec<User> = rows
+        .iter()
+        .map(|row| row.try_into().context("row转换到用户信息出错").unwrap())
+        .collect();
+
+    Ok(Page {
+        total,
+        page,
+        size,
+        data: users,
+    })
+}
+
+// 列出所有用户，分页
+pub async fn list(conn: &Conn, page: i64, size: i64) -> anyhow::Result<Page<Vec<User>>> {
+    let rows = conn
+        .query_one(
+            r#"
+    select count(*) from users
+    "#,
+            &[],
+        )
+        .await?;
+
+    let total = rows.get(0);
+
+    let rows = conn
+        .query(
+            r#"
+    select * from users order by id desc limit $1 offset $2
+    "#,
+            &[&size, &(&(page - 1) * size)],
+        )
+        .await?;
+
+    let users: Vec<User> = rows
+        .iter()
+        .map(|row| row.try_into().context("row转换到用户信息出错").unwrap())
+        .collect();
+
+    Ok(Page {
+        total,
+        page,
+        size,
+        data: users,
+    })
+}
+
 /// 根据userid 设置用户密码
 pub async fn set_password(conn: &Conn, userid: i32, password: &str) -> anyhow::Result<()> {
-    // let row = db
-    //     .execute(
-    //         r#"
-    // update users set auth = jsonb_set(auth, '{password}', $1::jsonb) where id = $2
-    // "#,
-    //         &[&password, &userid],
-    //     )
-    //     .await?;
-
-    // 上面代码报错  panicked at 'called `Result::unwrap()` on an `Err` value: error serializing parameter 0: cannot convert between the Rust type `&str` and the Postgres type `jsonb`
-    // 请修改
     let row = conn
         .execute(
             r#"
@@ -93,8 +180,6 @@ pub async fn set_password(conn: &Conn, userid: i32, password: &str) -> anyhow::R
     if row == 0 {
         anyhow::bail!("未找到用户");
     }
-
-    // panic!("xxxxxxxxxxxxxxxxxxxxxxx");
 
     Ok(())
 }

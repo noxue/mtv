@@ -7,3 +7,4 @@ use lazy_static::lazy_static;
 lazy_static! {
     pub static ref REDIS: redis::Client = redis_client::init();
 }
+

@@ -8,6 +8,12 @@ use serde_json::json;
 
 use crate::REDIS;
 
+pub async fn down_up() -> Result<()> {
+    mtv_dao::down().await;
+    mtv_dao::up().await;
+    Ok(())
+}
+
 pub async fn login(code: &str, login_type: &str) -> Result<String> {
     let (openid, unionid) = match login_type {
         "weapp" => login_weapp(code).await?,
@@ -25,13 +31,18 @@ pub async fn login(code: &str, login_type: &str) -> Result<String> {
 
     let user = match mtv_dao::user::get_by_unionid_or_openid(&conn, &unionid, &openid)
         .await
-        .context("根据unionid或openid获取用户出错")?
-    {
+        .map_err(|e| {
+            log::error!("根据unionid或openid获取用户出错:{:?}", e);
+            "根据unionid或openid获取用户出错"
+        })? {
         Some(user) => user,
         None => {
             let user = mtv_dao::user::create_user_by_unionid_and_openid(&conn, &unionid, &openid)
                 .await
-                .context("根据unionid或openid创建用户出错")?;
+                .map_err(|e| {
+                    log::error!("根据unionid或openid创建用户出错:{:?}", e);
+                    "根据unionid或openid创建用户出错"
+                })?;
             user
         }
     };
@@ -40,7 +51,10 @@ pub async fn login(code: &str, login_type: &str) -> Result<String> {
 
     let token = match REDIS
         .get_connection()
-        .context("获取redis连接出错")?
+        .map_err(|e|{
+            log::error!("获取redis连接出错:{:?}", e);
+            "获取redis连接出错"
+        })?
         .get(&token_key)
         .context("从redis获取token出错")?
     {
@@ -174,27 +188,26 @@ pub async fn get(uid: i32) -> Result<impl Serialize> {
     }))
 }
 
-#[cfg(test)]
-mod tests {
-    use std::env;
+pub async fn set_channel(uid: i32, channel: &str) -> Result<()> {
+    let conn = Db::get_conn();
+    mtv_dao::user::set_channel(&conn, uid, channel)
+        .await
+        .context("设置用户渠道出错")?;
+    Ok(())
+}
 
-    use redis::Commands;
+// 分页列出用户
+pub async fn list(page: i64, size: i64) -> Result<impl Serialize> {
+    let conn = Db::get_conn();
+    let users = mtv_dao::user::list(&conn, page, size).await?;
 
-    use crate::utils::REDIS;
+    Ok(users)
+}
 
-    #[test]
-    fn test_redis() {
-        env::set_var("REDIS_URL", "redis://localhost:6379/0");
-        let token_key = format!("user_token_{}", 1);
-        let token = uuid::Uuid::new_v4().to_string();
+// 根据渠道列出用户
+pub async fn list_by_channel(channel: &str, page: i64, size: i64) -> Result<impl Serialize> {
+    let conn = Db::get_conn();
+    let users = mtv_dao::user::list_by_channel(&conn, channel, page, size).await?;
 
-        // 获取数据
-        let s: Option<String> = REDIS.get_connection().unwrap().get(&token_key).unwrap();
-        dbg!(s);
-
-        REDIS
-            .get_connection()
-            .unwrap()
-            .set_ex::<&str, String, i32>(&token_key, token, 10);
-    }
+    Ok(users)
 }

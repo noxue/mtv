@@ -22,10 +22,12 @@ CREATE TABLE users (
     avatar varchar(255),
     score int4 DEFAULT 0,
     vip int4 DEFAULT 0,
-    vip_expire_time timestamp with time zone not null DEFAULT now(),
+    vip_expire_time timestamp with time zone DEFAULT now(),
     auth jsonb DEFAULT '{}' :: jsonb,
-    create_time timestamp with time zone not null DEFAULT now(),
-    update_time timestamp with time zone not null DEFAULT now()
+    -- pub channel: Option<String>,
+    channel varchar(255),
+    create_time timestamp with time zone DEFAULT now(),
+    update_time timestamp with time zone DEFAULT now()
 );
 
 CREATE UNIQUE INDEX users_phone_uindex ON users ((auth ->> 'phone' :: text) varchar_pattern_ops);
@@ -52,6 +54,8 @@ CREATE UNIQUE INDEX users_wechat_openid_uindex ON users (
  price_single    单集影片价格
  is_show         影片状态 boolean
  view            观看数
+ vlikes          虚拟点赞数
+ is_finish       是否完结 boolean
  create_time     创建时间
  update_time     更新时间
  */
@@ -68,9 +72,14 @@ CREATE TABLE movies (
     price_single int4 NOT NULL DEFAULT 0,
     is_show bool NOT NULL DEFAULT false,
     view int4 NOT NULL DEFAULT 0,
-    create_time timestamp with time zone not null DEFAULT now(),
-    update_time timestamp with time zone not null DEFAULT now()
+    vlikes int4 DEFAULT 0,
+    is_finish bool NOT NULL DEFAULT false,
+    create_time timestamp with time zone DEFAULT now(),
+    update_time timestamp with time zone DEFAULT now()
 );
+
+-- tags 创建索引
+CREATE INDEX movies_tags_index ON movies USING gin (tags);
 
 CREATE UNIQUE INDEX movies_name_uindex ON movies (name);
 
@@ -100,8 +109,8 @@ CREATE TABLE movie_parts (
     share int4 NOT NULL DEFAULT 0,
     view int4 NOT NULL DEFAULT 0,
     rank int4 NOT NULL DEFAULT 0,
-    create_time timestamp with time zone not null DEFAULT now(),
-    update_time timestamp with time zone not null DEFAULT now()
+    create_time timestamp with time zone DEFAULT now(),
+    update_time timestamp with time zone DEFAULT now()
 );
 
 -- 外键
@@ -128,8 +137,8 @@ CREATE TABLE recharge_records (
     score int4 NOT NULL DEFAULT 0,
     mark varchar(255) NOT NULL,
     status int4 NOT NULL DEFAULT 0,
-    create_time timestamp with time zone not null DEFAULT now(),
-    update_time timestamp with time zone not null DEFAULT now()
+    create_time timestamp with time zone DEFAULT now(),
+    update_time timestamp with time zone DEFAULT now()
 );
 
 -- 外键
@@ -155,7 +164,7 @@ CREATE TABLE consume_records (
     movie_part_id int4 NOT NULL,
     score int4 NOT NULL DEFAULT 0,
     mark varchar(255) NOT NULL,
-    create_time timestamp with time zone not null DEFAULT now()
+    create_time timestamp with time zone DEFAULT now()
 );
 
 -- 外键
@@ -188,8 +197,8 @@ CREATE TABLE view_records (
     user_id int4 NOT NULL,
     movie_id int4 NOT NULL,
     movie_part_id int4 NOT NULL,
-    create_time timestamp with time zone not null DEFAULT now(),
-    update_time timestamp with time zone not null DEFAULT now()
+    create_time timestamp with time zone DEFAULT now(),
+    update_time timestamp with time zone DEFAULT now()
 );
 
 -- 外键
@@ -219,7 +228,7 @@ CREATE TABLE follow_records (
     id serial PRIMARY KEY,
     user_id int4 NOT NULL,
     movie_id int4 NOT NULL,
-    create_time timestamp with time zone not null DEFAULT now()
+    create_time timestamp with time zone DEFAULT now()
 );
 
 -- 外键
@@ -249,8 +258,8 @@ CREATE TABLE orders (
     amount int4 NOT NULL,
     order_no varchar(50) NOT NULL,
     status int4 NOT NULL DEFAULT 0,
-    create_time timestamp with time zone not null DEFAULT now(),
-    update_time timestamp with time zone not null DEFAULT now()
+    create_time timestamp with time zone DEFAULT now(),
+    update_time timestamp with time zone DEFAULT now()
 );
 
 -- 外键

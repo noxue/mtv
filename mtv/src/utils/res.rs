@@ -76,14 +76,3 @@ impl<T: Serialize> Responder for Res<T> {
     }
 }
 
-// 分页结果
-#[derive(Debug, Serialize)]
-pub struct Page<T>
-where
-    T: Serialize,
-{
-    pub page: usize,
-    pub size: usize,
-    pub total: usize,
-    pub data: T,
-}
