@@ -2,7 +2,7 @@ use anyhow::Context;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sqlrs::{Conn, Db, Table};
+use sqlrs::{Conn, Table};
 
 use crate::Page;
 

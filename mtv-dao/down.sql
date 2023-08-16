@@ -1,8 +1,8 @@
 -- 删除外键和索引
 ALTER TABLE
-    movie_parts DROP CONSTRAINT IF EXISTS movie_parts_movie_id_fkey;
+    videos DROP CONSTRAINT IF EXISTS videos_movie_id_fkey;
 
-DROP INDEX IF EXISTS movie_parts_movie_id_fkey;
+DROP INDEX IF EXISTS videos_movie_id_fkey;
 
 DROP INDEX IF EXISTS movies_tags_index;
 
@@ -67,7 +67,7 @@ drop table if exists consume_records;
 
 drop table if exists recharge_records;
 
-drop table if exists movie_parts;
+drop table if exists videos;
 
 drop table if exists movies;
 

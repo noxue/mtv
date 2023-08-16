@@ -24,7 +24,6 @@ CREATE TABLE users (
     vip int4 DEFAULT 0,
     vip_expire_time timestamp with time zone DEFAULT now(),
     auth jsonb DEFAULT '{}' :: jsonb,
-    -- pub channel: Option<String>,
     channel varchar(255),
     create_time timestamp with time zone DEFAULT now(),
     update_time timestamp with time zone DEFAULT now()
@@ -54,26 +53,31 @@ CREATE UNIQUE INDEX users_wechat_openid_uindex ON users (
  price_single    单集影片价格
  is_show         影片状态 boolean
  view            观看数
+ likes           点赞数
  vlikes          虚拟点赞数
  is_finish       是否完结 boolean
+ share_title     分享标题
+ share_pic       分享图片
  create_time     创建时间
  update_time     更新时间
  */
 CREATE TABLE movies (
     id serial PRIMARY KEY,
     name varchar(20) NOT NULL,
-    cover varchar(255) NOT NULL,
-    total int4 NOT NULL,
-    description varchar(255) NOT NULL,
-    is_top bool NOT NULL DEFAULT false,
-    is_hot bool NOT NULL DEFAULT false,
+    cover varchar(255),
+    total int4,
+    description varchar(255),
+    is_top bool,
+    is_hot bool,
     tags varchar(255) [] NOT NULL DEFAULT '{}' :: varchar(255) [],
     price_total int4 NOT NULL DEFAULT 0,
-    price_single int4 NOT NULL DEFAULT 0,
     is_show bool NOT NULL DEFAULT false,
     view int4 NOT NULL DEFAULT 0,
+    likes int4 DEFAULT 0,
     vlikes int4 DEFAULT 0,
     is_finish bool NOT NULL DEFAULT false,
+    share_title varchar(100),
+    share_pic varchar(255),
     create_time timestamp with time zone DEFAULT now(),
     update_time timestamp with time zone DEFAULT now()
 );
@@ -84,7 +88,7 @@ CREATE INDEX movies_tags_index ON movies USING gin (tags);
 CREATE UNIQUE INDEX movies_name_uindex ON movies (name);
 
 /*
- 影片集表 movie_parts
+ 影片集表 videos
  id 
  movie_id        影片编号 创建外键
  name            集名称
@@ -98,7 +102,7 @@ CREATE UNIQUE INDEX movies_name_uindex ON movies (name);
  create_time     创建时间
  update_time     更新时间
  */
-CREATE TABLE movie_parts (
+CREATE TABLE videos (
     id serial PRIMARY KEY,
     movie_id int4 NOT NULL,
     name varchar(20) NOT NULL,
@@ -113,11 +117,11 @@ CREATE TABLE movie_parts (
     update_time timestamp with time zone DEFAULT now()
 );
 
--- 外键
+-- 外键,movie_id,movie被删除，videos也会被删除, cascade 级联删除
 ALTER TABLE
-    movie_parts
+    videos
 ADD
-    CONSTRAINT movie_parts_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id);
+    CONSTRAINT videos_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE;
 
 /*
  充值记录表 recharge_records
@@ -181,7 +185,7 @@ ADD
 ALTER TABLE
     consume_records
 ADD
-    CONSTRAINT consume_records_movie_part_id_fkey FOREIGN KEY (movie_part_id) REFERENCES movie_parts(id);
+    CONSTRAINT consume_records_movie_part_id_fkey FOREIGN KEY (movie_part_id) REFERENCES videos(id);
 
 /*
  浏览记录 view_records
@@ -215,7 +219,7 @@ ADD
 ALTER TABLE
     view_records
 ADD
-    CONSTRAINT view_records_movie_part_id_fkey FOREIGN KEY (movie_part_id) REFERENCES movie_parts(id);
+    CONSTRAINT view_records_movie_part_id_fkey FOREIGN KEY (movie_part_id) REFERENCES videos(id);
 
 /*
  追剧记录 follow_records
@@ -248,7 +252,7 @@ ADD
  user_id         用户编号
  amount          订单金额
  order_no        订单编号
- status          订单状态 0:失败 1:成功
+ status          订单状态 0:失败 1:成功，2:未支付
  create_time     创建时间
  update_time     更新时间
  */

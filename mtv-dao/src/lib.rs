@@ -1,6 +1,6 @@
 pub mod user;
 pub mod movie;
-pub mod score;
+pub mod order;
 
 use serde::Serialize;
 pub use sqlrs::{transaction, Db, Table};

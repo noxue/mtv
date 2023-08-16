@@ -30,6 +30,7 @@ serde_json = { version = "1" }
 mtv-config = { path = "../mtv-config" }
 validator = { version = "0", features = ["derive"] }
 mtv-srv = { path = "../mtv-srv" }
+mtv-dao = { path = "../mtv-dao" }
 snafu="*"
 log="*"
 anyhow = "*"

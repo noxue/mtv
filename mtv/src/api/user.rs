@@ -17,7 +17,7 @@ pub async fn login(data: web::Json<LoginInfo>) -> actix_web::Result<impl Respond
     log::debug!("login: {:?}", data);
     let LoginInfo { code, login_type } = data.into_inner();
 
-    let token = srv::users::login(&code, &login_type).await?;
+    let token = srv::user::login(&code, &login_type).await?;
     log::debug!("login res: {:?}", token);
 
     let mut res = Res::new();
@@ -27,7 +27,7 @@ pub async fn login(data: web::Json<LoginInfo>) -> actix_web::Result<impl Respond
 }
 
 pub async fn me(me: Me) -> actix_web::Result<impl Responder> {
-    let user = mtv_srv::users::get(me.id).await?;
+    let user = mtv_srv::user::get(me.id).await?;
 
     let mut res = Res::new();
     res.set_data(user);
@@ -42,7 +42,7 @@ pub struct SetChannel {
 // 设置渠道
 pub async fn set_channel(me: Me, data: web::Json<SetChannel>) -> actix_web::Result<impl Responder> {
     let data = data.into_inner();
-    mtv_srv::users::set_channel(me.id, &data.channel).await?;
+    mtv_srv::user::set_channel(me.id, &data.channel).await?;
 
     let mut res = Res::new();
     res.set_data("");
@@ -54,7 +54,7 @@ pub async fn users(query: web::Query<PageQuery>) -> actix_web::Result<impl Respo
     let PageQuery { page, size } = query.into_inner();
     let page = page.unwrap_or(1);
     let size = size.unwrap_or(20);
-    let users = mtv_srv::users::list(page, size).await?;
+    let users = mtv_srv::user::list(page, size).await?;
 
     let mut res = Res::new();
     res.set_data(users);
@@ -69,7 +69,7 @@ pub async fn users_by_channel(
     let (PageQuery { page, size }) = query.into_inner();
     let page = page.unwrap_or(1);
     let size = size.unwrap_or(20);
-    let users = mtv_srv::users::list_by_channel(&channel, page, size).await?;
+    let users = mtv_srv::user::list_by_channel(&channel, page, size).await?;
 
     let mut res = Res::new();
     res.set_data(users);
@@ -77,5 +77,26 @@ pub async fn users_by_channel(
 }
 
 // 列出我的追剧列表
+pub async fn follows(me: Me) -> actix_web::Result<impl Responder> {
+    
+    Ok("")
+}
 
-// 列出浏览历史
+// 最近观看
+pub async fn recents(me: Me) -> actix_web::Result<impl Responder> {
+
+    Ok("")
+}
+
+
+// 充值记录
+pub async fn recharges(me: Me) -> actix_web::Result<impl Responder> {
+
+    Ok("")
+}
+
+// 消费记录
+pub async fn consumes(me: Me) -> actix_web::Result<impl Responder> {
+
+    Ok("")
+}

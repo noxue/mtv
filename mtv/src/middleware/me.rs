@@ -19,7 +19,7 @@ impl FromRequest for Me {
             Some(token) => token.to_str().unwrap(),
             None => return err("请先登录".into()),
         };
-        match mtv_srv::users::get_uid(token.trim()).map(|id| Me { id }) {
+        match mtv_srv::user::get_uid(token.trim()).map(|id| Me { id }) {
             Ok(v) => ok(v),
             Err(e) => err(e.into()),
         }
