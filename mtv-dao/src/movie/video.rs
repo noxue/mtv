@@ -18,31 +18,6 @@ pub struct Video {
     pub update_time: chrono::DateTime<Local>,
 }
 
-/*
-pub async fn add(
-    conn: &Conn,
-    name: String,
-    cover: String,
-    description: String,
-    tags: Vec<String>,
-    price_total: i32,
-    vlikes: i32,
-) -> anyhow::Result<Movie> {
-    let row = conn
-        .query_one(
-            r#" insert into movies (name, cover, description, tags, price_total, vlikes) values ($1, $2, $3, $4, $5, $6) returning * "#,
-            &[&name, &cover, &description, &tags, &price_total, &vlikes],
-        )
-        .await.map_err(|e|{
-            if e.to_string().contains("duplicate key value violates unique constraint \"movies_name_uindex\""){
-                anyhow::anyhow!("电影名已存在")
-            }else{
-                anyhow::anyhow!("{}", e)
-            }
-        })?;
-    Ok(row.try_into()?)
-}
-*/
 pub async fn add(
     conn: &Conn,
     movie_id: i32,
@@ -59,6 +34,36 @@ pub async fn add(
         )
         .await?;
     Ok(row.try_into()?)
+}
+
+#[derive(Debug, Clone, Serialize, Table)]
+pub struct VideoList {
+    pub id: i32,
+    pub name: String,
+    pub price: i32,
+    pub rank: i32,
+}
+
+pub async fn list(conn: &Conn, movie_id: i32) -> anyhow::Result<Vec<VideoList>> {
+    let rows = conn
+        .query(
+            r#" select id, name, price, rank from videos where movie_id = $1 order by rank asc, id asc"#,
+            &[&movie_id],
+        )
+        .await?;
+    Ok(rows.iter().map(|row| row.try_into().unwrap()).collect())
+}
+
+pub async fn get(conn: &Conn, video_id: i32) -> anyhow::Result<Option<Video>> {
+    let row = conn
+        .query_opt(r#" select * from videos where id = $1 "#, &[&video_id])
+        .await?;
+
+    if let Some(row) = row {
+        Ok(Some(row.try_into()?))
+    } else {
+        Ok(None)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Table)]

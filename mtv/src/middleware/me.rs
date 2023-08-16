@@ -1,10 +1,17 @@
 use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use futures::future::{err, ok, Ready};
+use mtv_config::CONFIG;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Me {
     pub id: i32,
+}
+
+impl Me{
+    pub fn is_admin(&self)->bool{
+        CONFIG.admin_ids.contains(&self.id)
+    }
 }
 
 impl FromRequest for Me {

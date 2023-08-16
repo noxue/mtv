@@ -123,6 +123,7 @@ ALTER TABLE
 ADD
     CONSTRAINT videos_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE;
 
+
 /*
  充值记录表 recharge_records
  id
@@ -156,7 +157,7 @@ ADD
  id 
  user_id         用户编号
  movie_id        影片编号
- movie_part_id   影片集编号
+ video_id   影片集编号
  score           消费积分
  mark            备注
  create_time     创建时间
@@ -165,7 +166,7 @@ CREATE TABLE consume_records (
     id serial PRIMARY KEY,
     user_id int4 NOT NULL,
     movie_id int4 NOT NULL,
-    movie_part_id int4 NOT NULL,
+    video_id int4 NOT NULL,
     score int4 NOT NULL DEFAULT 0,
     mark varchar(255) NOT NULL,
     create_time timestamp with time zone DEFAULT now()
@@ -185,7 +186,16 @@ ADD
 ALTER TABLE
     consume_records
 ADD
-    CONSTRAINT consume_records_movie_part_id_fkey FOREIGN KEY (movie_part_id) REFERENCES videos(id);
+    CONSTRAINT consume_records_video_id_fkey FOREIGN KEY (video_id) REFERENCES videos(id);
+
+-- user_id 创建索引
+CREATE INDEX consume_records_user_id_index ON consume_records (user_id);
+
+-- movie_id 创建索引
+CREATE INDEX consume_records_movie_id_index ON consume_records (movie_id);
+
+-- 添加 video_id 和 user_id 联合索引
+CREATE INDEX consume_records_video_id_user_id_index ON consume_records (video_id, user_id);
 
 /*
  浏览记录 view_records

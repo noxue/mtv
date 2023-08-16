@@ -124,6 +124,22 @@ pub async fn update(conn: &Conn, id: i32, update_movie: &UpdateMovie) -> anyhow:
     Ok(row.try_into()?)
 }
 
+// 增加 观看 次数
+pub async fn add_view(conn: &Conn, movie_id: i32, video_id:i32) -> anyhow::Result<()> {
+    let r = conn.execute(r#" update movies set view = view + 1 where id = $1 "#, &[&movie_id])
+        .await?;
+    if r == 0 {
+        return Err(anyhow!("电影不存在"));
+    }
+    // 更新视频的播放
+    let r = conn.execute(r#" update videos set view = view + 1 where id = $1 "#, &[&video_id])
+        .await?;
+    if r == 0 {
+        return Err(anyhow!("视频不存在"));
+    }
+    Ok(())
+}
+
 
 /// 删除
 pub async fn delete(conn: &Conn, id: i32) -> anyhow::Result<()> {

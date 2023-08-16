@@ -61,17 +61,17 @@ pub fn api() -> Scope {
                 .route("/{movie_id}/videos", web::get().to(movie::list_video))
                 // 更新影片
                 .route(
-                    "/{movie_id}/videos/{video_id}",
+                    "/videos/{video_id}",
                     web::put().to(movie::update_video),
                 )
                 // 获得影片，在其中执行扣除金币的操作，如果成功返回影片信息，如果扣费失败 返回对应错误，比如金币不足
                 .route(
-                    "/{movie_id}/videos/{video_id}",
+                    "/videos/{video_id}",
                     web::get().to(movie::get_video),
                 )
                 // 删除影片
                 .route(
-                    "/{movie_id}/videos/{video_id}",
+                    "/videos/{video_id}",
                     web::delete().to(movie::delete_video),
                 )
                 // 追剧

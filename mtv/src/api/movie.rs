@@ -4,6 +4,7 @@ use mtv_dao::movie::UpdateMovie;
 use serde::Deserialize;
 use std::collections::HashMap;
 
+use crate::middleware::Me;
 use crate::utils::res::Res;
 
 use super::PageQuery;
@@ -118,7 +119,7 @@ pub struct AddVideoData {
     pub name: String,
     pub video: String,
     pub price: Option<i32>,
-    pub rank: Option<i32>,  // 排序,数字越大越靠后
+    pub rank: Option<i32>,   // 排序,数字越大越靠后
     pub status: Option<i32>, // 状态 0:下架 1:上架，默认上架
 }
 // 添加单集视频
@@ -143,19 +144,26 @@ pub async fn add_video(
     Ok(res)
 }
 
-// 列出短剧所有集的信息，支持分页
-pub async fn list_video() -> Result<impl Responder> {
-    Ok("")
+// 列出短剧所有集的部分信息，支持分页
+pub async fn list_video(movie_id: web::Path<i32>) -> Result<impl Responder> {
+    let movie_id = movie_id.into_inner();
+    let videos = mtv_srv::movie::video::list(movie_id).await?;
+    let mut res = Res::new();
+    res.set_data(videos);
+    Ok(res)
 }
 
 // 更新单集短剧的信息
-pub async fn update_video() -> Result<impl Responder> {
+pub async fn update_video(video_id: web::Path<i32>) -> Result<impl Responder> {
     Ok("")
 }
 
 // 查看单集短剧的信息
-pub async fn get_video() -> Result<impl Responder> {
-    Ok("")
+pub async fn get_video(video_id: web::Path<i32>, me: Me) -> Result<impl Responder> {
+    let v = mtv_srv::movie::video::get(video_id.into_inner(), me.id, me.is_admin()).await?;
+    let mut res = Res::new();
+    res.set_data(v);
+    Ok(res)
 }
 
 // 删除单集短剧

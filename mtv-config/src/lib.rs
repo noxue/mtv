@@ -13,6 +13,7 @@ pub struct DataConfig {
     pub weapp_appid: String,
     pub weapp_secret: String,
     pub redis_url: String,
+    pub admin_ids: Vec<i32>,
 }
 
 impl DataConfig {
@@ -24,6 +25,11 @@ impl DataConfig {
         let weapp_appid = env::var("WEAPP_APPID").expect("WEAPP_APPID must be set");
         let weapp_secret = env::var("WEAPP_SECRET").expect("WEAPP_SECRET must be set");
         let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
+        let admin_ids = env::var("ADMIN_IDS")
+            .unwrap_or_default()
+            .split(",")
+            .map(|x| x.parse::<i32>().unwrap())
+            .collect::<Vec<i32>>();
 
 
         DataConfig {
@@ -33,6 +39,7 @@ impl DataConfig {
             weapp_appid,
             weapp_secret,
             redis_url,
+            admin_ids,
         }
     }
 }
