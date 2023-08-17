@@ -75,9 +75,9 @@ pub fn api() -> Scope {
                     web::delete().to(movie::delete_video),
                 )
                 // 追剧
-                .route("/follow/{video_id}", web::post().to(movie::follow))
+                .route("/{movie_id}/follow", web::post().to(movie::follow))
                 // 点赞
-                .route("/like/{video_id}", web::post().to(movie::like)),
+                .route("/like", web::post().to(movie::like)),
         )
         // orders
         .service(

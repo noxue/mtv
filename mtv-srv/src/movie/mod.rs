@@ -2,7 +2,7 @@ pub mod video;
 
 use mtv_dao::{
     movie::{Movie, UpdateMovie},
-    Db, Page,
+    transaction, Db, Page,
 };
 use serde::{Deserialize, Serialize};
 
@@ -60,7 +60,8 @@ pub async fn list(
 
     if tags.is_some() {
         let tags = tags.unwrap().split(",").map(|s| s.to_string()).collect();
-        let movies = mtv_dao::movie::list_tags(&conn, tags, desc.is_some(), page, page_size).await?;
+        let movies =
+            mtv_dao::movie::list_tags(&conn, tags, desc.is_some(), page, page_size).await?;
         return Ok(movies);
     }
 
@@ -84,7 +85,8 @@ pub async fn list(
     }
 
     if update_time.is_some() {
-        let movies = mtv_dao::movie::list_update_time(&conn, desc.is_some(), page, page_size).await?;
+        let movies =
+            mtv_dao::movie::list_update_time(&conn, desc.is_some(), page, page_size).await?;
         return Ok(movies);
     }
 
@@ -95,4 +97,49 @@ pub async fn list(
 
     let movies = mtv_dao::movie::list(&conn, desc.is_some(), page, page_size).await?;
     Ok(movies)
+}
+
+// 点赞，同时更新movie 和 vedio
+pub async fn like(user_id: i32, movie_id: i32, video_id: i32, is_like: bool) -> Result<()> {
+    let mut conn = Db::get_conn();
+    let likes = if is_like { 1 } else { -1 };
+
+    let is_liked = mtv_dao::movie::video::is_liked(&conn, user_id, movie_id).await?;
+    panic!("xxxx");
+    // 已经点过赞，就不再点赞了，或者已经取消点赞，就不再取消点赞了
+    if is_liked == is_like {
+        return Ok(());
+    }
+
+    mtv_dao::movie::update_likes(&conn, movie_id, likes)
+        .await
+        .map_err(|e| {
+            log::error!("更新movie点赞量失败: {:?}", e);
+            "点赞失败"
+        })?;
+
+    mtv_dao::movie::video::update_likes(&conn, video_id, likes)
+        .await
+        .map_err(|e| {
+            log::error!("更新video点赞量失败: {:?}", e);
+            "点赞失败"
+        })?;
+
+    if is_like {
+        mtv_dao::movie::video::add_likes_record(&conn, user_id, movie_id, video_id)
+            .await
+            .map_err(|e| {
+                log::error!("添加点赞记录失败: {:?}", e);
+                "点赞失败"
+            })?;
+    } else {
+        mtv_dao::movie::video::delete_likes_record(&conn, user_id, video_id)
+            .await
+            .map_err(|e| {
+                log::error!("删除点赞记录失败: {:?}", e);
+                "取消点赞失败"
+            })?;
+    }
+
+    Ok(())
 }

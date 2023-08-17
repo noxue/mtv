@@ -1,6 +1,6 @@
 use mtv_dao::{
     movie::{
-        video::{Video, VideoList},
+        video::{Video, VideoList, UpdateVideo},
         Movie, UpdateMovie,
     },
     Db, Page,
@@ -74,3 +74,21 @@ pub async fn get(video_id: i32, user_id: i32, is_admin: bool) -> Result<Video> {
 
     Ok(v)
 }
+
+
+pub async fn update(video_id: i32, update_video: &UpdateVideo) -> Result<Video> {
+    let conn = Db::get_conn();
+    let v = mtv_dao::movie::video::update(&conn, video_id, update_video).await?;
+    Ok(v)
+}
+
+// 删除
+pub async fn delete(video_id: i32) -> Result<()> {
+    let conn = Db::get_conn();
+    mtv_dao::movie::video::delete(&conn, video_id).await?;
+    Ok(())
+}
+
+
+
+

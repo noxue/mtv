@@ -44,9 +44,9 @@ ALTER TABLE
 ALTER TABLE
     view_records DROP CONSTRAINT IF EXISTS view_records_movie_id_fkey;
 
--- view_records_movie_part_id_fkey
+-- view_records_video_id_fkey
 ALTER TABLE
-    view_records DROP CONSTRAINT IF EXISTS view_records_movie_part_id_fkey;
+    view_records DROP CONSTRAINT IF EXISTS view_records_video_id_fkey;
 
 
 -- follow_records_user_id_fkey
@@ -56,6 +56,17 @@ ALTER TABLE
 -- follow_records_movie_id_fkey
 ALTER TABLE
     follow_records DROP CONSTRAINT IF EXISTS follow_records_movie_id_fkey;
+
+
+-- 删除索引
+DROP INDEX IF EXISTS likes_records_user_id_video_id_index;
+
+-- 删除外键
+ALTER TABLE
+    likes_records DROP CONSTRAINT IF EXISTS likes_records_user_id_fkey;
+
+ALTER TABLE
+    likes_records DROP CONSTRAINT IF EXISTS likes_records_movie_id_fkey;
 
 
 -- 删除表
@@ -74,3 +85,5 @@ drop table if exists movies;
 drop table if exists users;
 
 drop table if exists orders;
+
+drop table if exists likes_records;

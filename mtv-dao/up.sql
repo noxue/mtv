@@ -202,7 +202,7 @@ CREATE INDEX consume_records_video_id_user_id_index ON consume_records (video_id
  id
  user_id         用户编号
  movie_id        影片编号
- movie_part_id   影片集编号
+ video_id   影片集编号
  create_time     创建时间
  update_time     更新时间
  */
@@ -210,7 +210,7 @@ CREATE TABLE view_records (
     id serial PRIMARY KEY,
     user_id int4 NOT NULL,
     movie_id int4 NOT NULL,
-    movie_part_id int4 NOT NULL,
+    video_id int4 NOT NULL,
     create_time timestamp with time zone DEFAULT now(),
     update_time timestamp with time zone DEFAULT now()
 );
@@ -229,7 +229,33 @@ ADD
 ALTER TABLE
     view_records
 ADD
-    CONSTRAINT view_records_movie_part_id_fkey FOREIGN KEY (movie_part_id) REFERENCES videos(id);
+    CONSTRAINT view_records_video_id_fkey FOREIGN KEY (video_id) REFERENCES videos(id);
+
+/*
+点赞记录
+*/
+CREATE TABLE likes_records (
+    id serial PRIMARY KEY,
+    user_id int4 NOT NULL,
+    movie_id int4 NOT NULL,
+    video_id int4 NOT NULL,
+    create_time timestamp with time zone DEFAULT now(),
+    update_time timestamp with time zone DEFAULT now()
+);
+
+-- 外键
+ALTER TABLE
+    likes_records
+ADD
+    CONSTRAINT likes_records_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+
+ALTER TABLE
+    likes_records
+ADD
+    CONSTRAINT likes_records_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id);
+
+-- user_id 和 video_id 联合索引
+CREATE INDEX likes_records_user_id_video_id_index ON likes_records (user_id, video_id);
 
 /*
  追剧记录 follow_records

@@ -489,8 +489,14 @@ pub async fn list_price(conn: &Conn, desc: bool, page: i64, size: i64) -> anyhow
             data: movies,
         }
     )
-
-
-    
 }
 
+// 修改点赞数  likes=likes+likes
+pub async fn update_likes(conn: &Conn, id: i32, likes: i32) -> anyhow::Result<()> {
+    let r = conn.execute(r#" update movies set likes = likes + $1 where id = $2 "#, &[&likes, &id])
+        .await?;
+    if r == 0 {
+        return Err(anyhow!("点赞失败"));
+    }
+    Ok(())
+}

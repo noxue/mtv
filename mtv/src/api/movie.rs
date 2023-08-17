@@ -1,5 +1,6 @@
 use actix_web::Result;
 use actix_web::{web, Responder};
+use mtv_dao::movie::video::UpdateVideo;
 use mtv_dao::movie::UpdateMovie;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -154,8 +155,15 @@ pub async fn list_video(movie_id: web::Path<i32>) -> Result<impl Responder> {
 }
 
 // 更新单集短剧的信息
-pub async fn update_video(video_id: web::Path<i32>) -> Result<impl Responder> {
-    Ok("")
+pub async fn update_video(
+    video_id: web::Path<i32>,
+    data: web::Json<UpdateVideo>,
+) -> Result<impl Responder> {
+    let video_id = video_id.into_inner();
+    let v = mtv_srv::movie::video::update(video_id, &data).await?;
+    let mut res = Res::new();
+    res.set_data(v);
+    Ok(res)
 }
 
 // 查看单集短剧的信息
@@ -167,13 +175,32 @@ pub async fn get_video(video_id: web::Path<i32>, me: Me) -> Result<impl Responde
 }
 
 // 删除单集短剧
-pub async fn delete_video() -> Result<impl Responder> {
-    Ok("")
+pub async fn delete_video(video_id: web::Path<i32>) -> Result<impl Responder> {
+    let video_id = video_id.into_inner();
+    mtv_srv::movie::video::delete(video_id).await?;
+    let mut res = Res::new();
+    res.set_data(video_id);
+    Ok(res)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LikeData {
+    movie_id: i32,
+    video_id: i32,
+    pub like: bool,
 }
 
 // 点赞短剧,取消点赞
-pub async fn like() -> Result<impl Responder> {
-    Ok("")
+pub async fn like(me: Me, data: web::Json<LikeData>) -> Result<impl Responder> {
+    let LikeData {
+        movie_id,
+        video_id,
+        like,
+    } = data.into_inner();
+    mtv_srv::movie::like(me.id, movie_id, video_id, like).await?;
+    let mut res = Res::new();
+    res.set_data("");
+    Ok(res)
 }
 
 // 追剧，取消追剧
