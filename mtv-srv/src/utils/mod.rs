@@ -1,5 +1,6 @@
 pub(crate) mod redis_client;
 pub(crate) mod errors;
+pub mod oss;
 
 use lazy_static::lazy_static;
 

@@ -1,5 +1,5 @@
 pub mod user;
-mod utils;
+pub mod utils;
 pub mod movie;
 
 pub use utils::errors::{Result, SrvError};

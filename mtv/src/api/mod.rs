@@ -2,6 +2,8 @@ pub mod movie;
 pub mod order;
 pub mod pay;
 pub mod user;
+pub mod utils;
+
 
 use actix_web::{web, Scope};
 use serde::Deserialize;
@@ -24,6 +26,7 @@ async fn test() -> &'static str {
 pub fn api() -> Scope {
     web::scope("/api")
         .route("/down_up", web::get().to(down_up))
+        .route("/upload/token", web::get().to(utils::oss_token))
         .service(
             web::scope("/users")
                 .route("", web::get().to(user::users))
@@ -75,7 +78,7 @@ pub fn api() -> Scope {
                     web::delete().to(movie::delete_video),
                 )
                 // 追剧
-                .route("/{movie_id}/follow", web::post().to(movie::follow))
+                .route("/follow", web::post().to(movie::follow))
                 // 点赞
                 .route("/like", web::post().to(movie::like)),
         )

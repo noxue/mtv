@@ -34,3 +34,4 @@ mtv-dao = { path = "../mtv-dao" }
 snafu="*"
 log="*"
 anyhow = "*"
+uuid="1"

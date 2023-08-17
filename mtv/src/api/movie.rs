@@ -203,7 +203,17 @@ pub async fn like(me: Me, data: web::Json<LikeData>) -> Result<impl Responder> {
     Ok(res)
 }
 
+#[derive(Debug, Deserialize)]
+pub struct FollowData {
+    movie_id: i32,
+    pub follow: bool,
+}
+
 // 追剧，取消追剧
-pub async fn follow() -> Result<impl Responder> {
-    Ok("")
+pub async fn follow(me: Me, data: web::Json<FollowData>) -> Result<impl Responder> {
+    let FollowData { movie_id, follow } = data.into_inner();
+    mtv_srv::movie::follow(me.id, movie_id, follow).await?;
+    let mut res = Res::new();
+    res.set_data("");
+    Ok(res)
 }

@@ -1607,6 +1607,7 @@ dependencies = [
  "snafu",
  "sqlrs",
  "tokio",
+ "uuid",
  "validator",
 ]
 

@@ -78,25 +78,28 @@ pub async fn users_by_channel(
 
 // 列出我的追剧列表
 pub async fn follows(me: Me) -> actix_web::Result<impl Responder> {
-    
-    Ok("")
+    let follows = mtv_srv::movie::follow_list(me.id).await?;
+
+    let mut res = Res::new();
+    res.set_data(follows);
+    Ok(res)
 }
 
 // 最近观看
 pub async fn recents(me: Me) -> actix_web::Result<impl Responder> {
+    let recent_view = mtv_srv::movie::recent_view(me.id).await?;
 
-    Ok("")
+    let mut res = Res::new();
+    res.set_data(recent_view);
+    Ok(res)
 }
-
 
 // 充值记录
 pub async fn recharges(me: Me) -> actix_web::Result<impl Responder> {
-
     Ok("")
 }
 
 // 消费记录
 pub async fn consumes(me: Me) -> actix_web::Result<impl Responder> {
-
     Ok("")
 }

@@ -181,15 +181,55 @@ pub async fn is_liked(conn: &Conn, user_id: i32, video_id: i32) -> anyhow::Resul
     }
 }
 
-
 #[derive(Debug, Clone, Serialize, Table)]
 pub struct ViewRecord {
     pub id: i32,
     pub user_id: i32,
     pub movie_id: i32,
-    pub movie_part_id: i32,
+    pub video_id: i32,
     pub create_time: chrono::DateTime<Local>,
     pub update_time: chrono::DateTime<Local>,
+}
+
+// 添加观看记录
+pub async fn add_view_record(
+    conn: &Conn,
+    user_id: i32,
+    movie_id: i32,
+    video_id: i32,
+) -> anyhow::Result<()> {
+    conn.execute(
+        r#" insert into view_records (user_id, movie_id, video_id) values ($1, $2, $3)"#,
+        &[&user_id, &movie_id, &video_id],
+    )
+    .await?;
+    Ok(())
+}
+
+
+#[derive(Debug, Clone, Serialize, Table)]
+pub struct MovieHistory{
+    pub id: i32,
+    pub movie_name: String,
+    pub cover: String,
+    pub video_id: i32,
+    pub video_name: String,
+    pub create_time: chrono::DateTime<Local>,
+}
+
+pub async fn recent_view(
+    conn: &Conn,
+    user_id: i32,
+) -> anyhow::Result<Vec<MovieHistory>> {
+    // 列出观看历史，从 view_records 查询 创建时间， 然后根据 movie_id 分组, 查出最后插入的 video_id，和 create_time， 再从 movies 查出 name 作为 movie_name, cover, 从 videos 查出 name 作为 video_name  最后根据 view_records中create_time 倒序排列，并分页
+    let rows = conn
+        .query(
+            r#" select m.id, m.name as movie_name, m.cover, v.id as video_id, v.name as video_name,max(r.create_time) as create_time from view_records as r left join movies as m on r.movie_id = m.id left join videos as v on r.video_id = v.id where r.user_id = $1 group by m.id, m.name, m.cover, v.id, v.name order by max(r.create_time) desc"#,
+            &[&user_id],
+        )
+        .await?;
+        
+    Ok(rows.iter().map(|row| row.try_into().unwrap()).collect())
 }
 
 #[derive(Debug, Clone, Serialize, Table)]
@@ -199,4 +239,73 @@ pub struct FollowRecord {
     pub movie_id: i32,
     pub create_time: chrono::DateTime<Local>,
     pub update_time: chrono::DateTime<Local>,
+}
+
+
+// 添加追剧记录
+pub async fn add_follow_record(
+    conn: &Conn,
+    user_id: i32,
+    movie_id: i32,
+) -> anyhow::Result<()> {
+    conn.execute(
+        r#" insert into follow_records (user_id, movie_id) values ($1, $2)"#,
+        &[&user_id, &movie_id],
+    )
+    .await?;
+    Ok(())
+}
+
+// 根据 user_id movie_id 判断是否已经追剧
+pub async fn is_followed(conn: &Conn, user_id: i32, movie_id: i32) -> anyhow::Result<bool> {
+    let row = conn
+        .query_opt(
+            r#" select id from follow_records where user_id = $1 and movie_id = $2 limit 1 "#,
+            &[&user_id, &movie_id],
+        )
+        .await?;
+
+    if let Some(_) = row {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+// 删除追剧记录
+pub async fn delete_follow_record(
+    conn: &Conn,
+    user_id: i32,
+    movie_id: i32,
+) -> anyhow::Result<()> {
+    conn.execute(
+        r#" delete from follow_records where user_id = $1 and movie_id = $2 "#,
+        &[&user_id, &movie_id],
+    )
+    .await?;
+    Ok(())
+}
+
+
+#[derive(Debug, Clone, Serialize, Table)]
+pub struct MovieFollow{
+    pub id: i32,
+    pub movie_name: String,
+    pub cover: String,
+    pub create_time: chrono::DateTime<Local>,
+}
+
+pub async fn follow_list(
+    conn: &Conn,
+    user_id: i32,
+) -> anyhow::Result<Vec<MovieFollow>> {
+    // 列出追剧历史，从 follow_records 查询 创建时间， 然后根据 movie_id 分组, 查出最后插入的 video_id，和 create_time， 再从 movies 查出 name 作为 movie_name, cover, 从 videos 查出 name 作为 video_name  最后根据 follow_records中create_time 倒序排列，并分页
+    let rows = conn
+        .query(
+            r#" select m.id, m.name as movie_name, m.cover, max(r.create_time) as create_time from follow_records as r left join movies as m on r.movie_id = m.id where r.user_id = $1 group by m.id, m.name, m.cover order by max(r.create_time) desc"#,
+            &[&user_id],
+        )
+        .await?;
+        
+    Ok(rows.iter().map(|row| row.try_into().unwrap()).collect())
 }

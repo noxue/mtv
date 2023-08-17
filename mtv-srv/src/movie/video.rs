@@ -40,6 +40,7 @@ pub async fn get(video_id: i32, user_id: i32, is_admin: bool) -> Result<Video> {
     // 不是管理员，就需要扣除金币，增加播放量
     if !is_admin {
         mtv_dao::movie::add_view(&conn, v.movie_id, v.id).await?;
+        mtv_dao::movie::video::add_view_record(&conn, user_id, v.movie_id, video_id).await?;
         if v.price > 0 {
 
             // 已经付费过，直接返回

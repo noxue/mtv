@@ -65,9 +65,9 @@ macro_rules! transaction {
     ($conn:ident,{
         $($body:tt)*
     }) => {
-        $conn.begin().await.unwrap();
+        $conn.begin().await?;
         $($body)*
-        $conn.commit().await.unwrap();
+        $conn.commit().await?;
     };
 }
 
@@ -92,11 +92,12 @@ impl Db {
 
     pub fn get_conn() -> Conn {
         let db = DB.get().expect("请先调用Db::init");
+       
         let conn = match db.lock() {
             Ok(conn) => conn,
             Err(e) => {
                 log::error!("获取数据库连接出错:{}", e);
-                std::process::exit(1);
+                e.into_inner()
             }
         };
         Conn { conn }
