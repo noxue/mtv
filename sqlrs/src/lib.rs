@@ -1,14 +1,20 @@
 pub mod crud;
 
 pub use sqlrs_macros::Table;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Mutex, MutexGuard, Arc};
 use tokio::sync::OnceCell;
 use tokio_postgres::{Client, NoTls};
 
-static DB: OnceCell<Mutex<Db>> = OnceCell::const_new();
+static DB: OnceCell<Arc<Mutex<Db>>> = OnceCell::const_new();
 
 pub struct Conn {
     conn: MutexGuard<'static, Db>,
+}
+
+impl Drop for Conn {
+    fn drop(&mut self) {
+        log::debug!("drop conn");
+    }
 }
 
 impl std::ops::Deref for Conn {
@@ -79,14 +85,20 @@ impl Db {
             }
         });
 
-        DB.set(Mutex::new(Db { client }))
+        DB.set(Arc::new(Mutex::new(Db { client })))
             .expect("初始化函数只能调用一次");
         Ok(())
     }
 
     pub fn get_conn() -> Conn {
         let db = DB.get().expect("请先调用Db::init");
-        let conn = db.lock().unwrap();
+        let conn = match db.lock() {
+            Ok(conn) => conn,
+            Err(e) => {
+                log::error!("获取数据库连接出错:{}", e);
+                std::process::exit(1);
+            }
+        };
         Conn { conn }
     }
 }
