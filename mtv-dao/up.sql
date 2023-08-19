@@ -285,18 +285,22 @@ ADD
 /*
  订单表 orders
  id
+ goods_id        商品编号
  user_id         用户编号
  amount          订单金额
  order_no        订单编号
- status          订单状态 0:失败 1:成功，2:未支付
+ description     订单描述
+ status          订单状态 0:未支付 1:成功，-1失败
  create_time     创建时间
  update_time     更新时间
  */
 CREATE TABLE orders (
     id serial PRIMARY KEY,
+    goods_id int4 NOT NULL,
     user_id int4 NOT NULL,
     amount int4 NOT NULL,
     order_no varchar(50) NOT NULL,
+    description varchar(255) NOT NULL,
     status int4 NOT NULL DEFAULT 0,
     create_time timestamp with time zone DEFAULT now(),
     update_time timestamp with time zone DEFAULT now()
@@ -312,3 +316,29 @@ ADD
 CREATE UNIQUE INDEX orders_order_no_uindex ON orders (order_no);
 
 
+
+/*
+商品列表
+id              商品编号
+name            商品名称
+price           商品价格
+description     商品描述
+score           获得积分
+is_hot          是否是热门商品
+is_vip          是否是开会员商品,开vip和普通购买积分，分开处理
+expire_type     会员过期类型 0:月 1:季 2:年
+expire_count    会员过期周期数
+create_time     创建时间
+*/
+CREATE TABLE goods (
+    id serial PRIMARY KEY,
+    name varchar(20) NOT NULL,
+    price int4 NOT NULL DEFAULT 0,
+    description varchar(255) NOT NULL,
+    score int4 NOT NULL DEFAULT 0,
+    is_hot bool NOT NULL DEFAULT false,
+    is_vip bool NOT NULL DEFAULT false,
+    expire_type int4 NOT NULL DEFAULT 0,
+    expire_count int4 NOT NULL DEFAULT 0,
+    create_time timestamp with time zone DEFAULT now()
+);

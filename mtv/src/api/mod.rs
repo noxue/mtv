@@ -92,11 +92,11 @@ pub fn api() -> Scope {
                 // 订单详情
                 .route("/{id}", web::get().to(order::get))
                 // 支付签名
-                .route("/{id}/pay", web::post().to(pay::sign))
+                .route("/pay", web::post().to(pay::pay))
                 // 支付回调
-                .route("/{id}/pay/callback", web::post().to(pay::callback))
+                .route("/pay/notify", web::post().to(pay::notify))
                 // 检测支付情况
-                .route("/{id}/pay/check", web::get().to(pay::check))
+                .route("/{order_id}/pay/check", web::get().to(pay::check))
                 // 所有充值记录
                 .route("/recharges", web::get().to(order::recharges))
                 // 所有消费记录

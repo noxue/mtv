@@ -210,7 +210,7 @@ pub async fn set_phone_and_password(
 /// 根据id获取用户
 pub async fn get(conn: &Conn, userid: i32) -> anyhow::Result<User> {
     let row = conn
-        .query_one(
+        .query_opt(
             r#"
     select * from users where id = $1
     "#,
@@ -218,7 +218,11 @@ pub async fn get(conn: &Conn, userid: i32) -> anyhow::Result<User> {
         )
         .await?;
 
-    let user: User = row.try_into()?;
+    if row.is_none() {
+        anyhow::bail!("未找到用户");
+    }
+
+    let user: User = row.unwrap().try_into()?;
     Ok(user)
 }
 
@@ -276,3 +280,24 @@ pub async fn update_score(conn: &Conn, userid: i32, score: i32) -> anyhow::Resul
     Ok(())
 }
 
+pub async fn update_vip(
+    conn: &Conn,
+    userid: i32,
+    expire_type: i32,
+    expire_time: chrono::DateTime<Local>,
+) -> anyhow::Result<()> {
+    let row = conn
+        .execute(
+            r#"
+    update users set vip = $1, vip_expire_time = $2 where id = $3
+    "#,
+            &[&expire_type, &expire_time, &userid],
+        )
+        .await?;
+
+    if row == 0 {
+        anyhow::bail!("未找到用户");
+    }
+
+    Ok(())
+}

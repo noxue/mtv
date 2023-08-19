@@ -1,0 +1,184 @@
+use chrono::Local;
+use mtv_dao::{order::*, Db, Page};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+
+use crate::{
+    utils::{self, pay::WxPayNotify},
+    Result,
+};
+
+// 添加订单
+pub async fn add(user_id: i32, goods_id: i32) -> Result<Order> {
+    let conn = Db::get_conn();
+
+    // 获取商品信息
+    let goods = mtv_dao::goods::get(&conn, goods_id).await?;
+    if goods.is_none() {
+        return Err("商品不存在".into());
+    }
+
+    let goods = goods.unwrap();
+
+    // 创建订单
+    let order = mtv_dao::order::add(
+        &conn,
+        goods_id,
+        user_id,
+        goods.price,
+        uuid::Uuid::new_v4()
+            .to_string()
+            .replace("-", "")
+            .to_string(),
+        goods.name,
+    )
+    .await
+    .map_err(|e| {
+        log::error!("创建订单出错:{:?}", e);
+        "创建订单出错"
+    })?;
+
+    Ok(order)
+}
+
+// 支付订单
+pub async fn pay(order_no: &str, openid: &str) -> Result<impl Serialize> {
+    let conn = Db::get_conn();
+
+    // 获取订单信息
+    let order = mtv_dao::order::get(&conn, order_no).await?;
+    if order.is_none() {
+        return Err("订单不存在".into());
+    }
+
+    let order = order.unwrap();
+
+    let v = utils::pay::WX_PAY
+        .prepay(
+            order.order_no,
+            order.amount,
+            openid.to_string(),
+            Some(order.description),
+            None,
+        )
+        .await?;
+
+    Ok(v)
+}
+
+pub async fn pay_notify(notify_data: WxPayNotify) -> Result<String> {
+    let data = utils::pay::WX_PAY
+        .decode(notify_data.clone())
+        .map_err(|e| {
+            log::error!("解析微信支付通知出错: {}", e);
+            "解析微信支付通知出错"
+        })?;
+
+    let order_no = &data.out_trade_no;
+
+    // 查询订单
+    let conn = Db::get_conn();
+    let order = mtv_dao::order::get(&conn, order_no).await?;
+    if order.is_none() {
+        return Err("订单不存在".into());
+    }
+
+    // 如果已经支付，直接返回订单编号
+    // 订单状态 0:未支付 1:成功，-1失败
+    let order = order.unwrap();
+    if order.status == 1 {
+        return Ok(order.order_no);
+    }
+
+    let state = if notify_data.event_type == "TRANSACTION.SUCCESS" {
+        1
+    } else {
+        -1
+    };
+
+    // 更新订单状态
+    let order = mtv_dao::order::update_order_status(&conn, order_no.to_string(), state)
+        .await
+        .map_err(|e| {
+            log::error!("更新订单状态出错: {}", e);
+            "更新订单状态出错"
+        })?;
+
+    // 获取对应的商品
+    let goods = mtv_dao::goods::get(&conn, order.goods_id).await?;
+    if goods.is_none() {
+        log::error!("商品不存在");
+        return Err("商品不存在".into());
+    }
+
+    let goods = goods.unwrap();
+
+    if goods.is_vip {
+
+        let expire_time = match goods.expire_type {
+            0 => chrono::Duration::days((30 * goods.expire_count).into()),
+            1 => chrono::Duration::days((90 * goods.expire_count).into()),
+            2 => chrono::Duration::days((365 * goods.expire_count).into()),
+            _ => {
+                log::error!("会员过期类型不支持");
+                return Err("会员过期类型不支持".into());
+            }
+        };
+
+        // 获取用户信息
+        let user = mtv_dao::user::get(&conn, order.user_id).await?;
+        let mut new_expire_time = user.vip_expire_time;
+        let now = Local::now();
+        // 如果vip到期时间大于当前时间，说明是续费
+        if new_expire_time > now {
+            // 续费，在到期的时间点添加
+            new_expire_time = new_expire_time + expire_time;
+        } else {
+            // 开通,在当前基础添加
+            new_expire_time = now + expire_time;
+        }
+
+        mtv_dao::user::update_vip(&conn, order.user_id, goods.expire_type, new_expire_time)
+            .await
+            .map_err(|e| {
+                log::error!("更新用户会员出错: {}", e);
+                "更新用户会员出错"
+            })?;
+
+        let description = format!(
+            "开通会员{}{}",
+            goods.expire_count,
+            match goods.expire_type {
+                0 => "个月",
+                1 => "个季度",
+                2 => "年",
+                _ => {
+                    log::error!("会员过期类型不支持");
+                    return Err("会员过期类型不支持".into());
+                }
+            }
+        );
+        // 添加开会员记录
+        mtv_dao::order::add_recharge_record(&conn, order.user_id, order.amount, 0, description)
+            .await?;
+    } else {
+        mtv_dao::user::update_score(&conn, order.user_id, goods.score)
+            .await
+            .map_err(|e| {
+                log::error!("更新用户积分出错: {}", e);
+                "更新用户积分出错"
+            })?;
+
+        // 添加积分记录
+        mtv_dao::order::add_recharge_record(
+            &conn,
+            order.user_id,
+            order.amount,
+            goods.score,
+            goods.description,
+        )
+        .await?;
+    }
+
+    Ok(order.order_no)
+}

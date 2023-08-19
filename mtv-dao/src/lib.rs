@@ -1,6 +1,7 @@
 pub mod user;
 pub mod movie;
 pub mod order;
+pub mod goods;
 
 use serde::Serialize;
 pub use sqlrs::{transaction, Db, Table};

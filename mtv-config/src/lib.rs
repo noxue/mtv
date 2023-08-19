@@ -14,17 +14,7 @@ pub struct DataConfig {
     pub weapp_secret: String,
     pub redis_url: String,
     pub admin_ids: Vec<i32>,
-    /*
-    # oss本地服务接口
-OSS_API_HOST = http://127.0.0.1:3000
-OSS_ACCESS_KEY_ID = LTAI4FjJ8Qq4X3Z4
-OSS_ACCESS_KEY_SECRET = 11111111111
-OSS_HOST = http://mtv.oss-cn-beijing.aliyuncs.com
-OSS_CALLBACK_URL = http://xxxxxxxxxx.com
-OSS_BUCKET_NAME = mtv
-# token超时时间
-OSS_EXPIRE_TIME = 30
-     */
+
     pub oss_api_host: String,
     pub oss_access_key_id: String,
     pub oss_access_key_secret: String,
@@ -32,6 +22,16 @@ OSS_EXPIRE_TIME = 30
     pub oss_callback_url: String,
     pub oss_bucket_name: String,
     pub oss_expire_time: i32,
+
+    pub wx_mp_app_id: String,
+    pub wx_mp_app_secret: String,
+    pub wx_pay_api_host: String,
+    pub wx_pay_mch_id: String,
+    pub wx_pay_api_v3_private_key: String,
+    pub wx_pay_serial_no: String,
+    pub wx_pay_notify_url: String,
+    pub wx_pay_cert_path: String,
+    pub wx_pay_cert_key_path: String,
 }
 
 impl DataConfig {
@@ -56,6 +56,15 @@ impl DataConfig {
         let oss_bucket_name = env::var("OSS_BUCKET_NAME").expect("OSS_BUCKET_NAME must be set");
         let oss_expire_time = env::var("OSS_EXPIRE_TIME").expect("OSS_EXPIRE_TIME must be set").parse::<i32>().unwrap();
 
+        let wx_mp_app_id = env::var("WX_MP_APP_ID").expect("WX_MP_APP_ID must be set");
+        let wx_mp_app_secret = env::var("WX_MP_APP_SECRET").expect("WX_MP_APP_SECRET must be set");
+        let wx_pay_api_host = env::var("WX_PAY_API_HOST").expect("WX_PAY_API_HOST must be set");
+        let wx_pay_mch_id = env::var("WX_PAY_MCH_ID").expect("WX_PAY_MCH_ID must be set");
+        let wx_pay_api_v3_private_key = env::var("WX_PAY_API_V3_PRIVATE_KEY").expect("WX_PAY_API_V3_PRIVATE_KEY must be set");
+        let wx_pay_serial_no = env::var("WX_PAY_SERIAL_NO").expect("WX_PAY_SERIAL_NO must be set");
+        let wx_pay_notify_url = env::var("WX_PAY_NOTIFY_URL").expect("WX_PAY_NOTIFY_URL must be set");
+        let wx_pay_cert_path = env::var("WX_PAY_CERT_PATH").expect("WX_PAY_CERT_PATH must be set");
+        let wx_pay_cert_key_path = env::var("WX_PAY_CERT_KEY_PATH").expect("WX_PAY_CERT_KEY_PATH must be set");
 
         DataConfig {
             log_level,
@@ -72,6 +81,15 @@ impl DataConfig {
             oss_callback_url,
             oss_bucket_name,
             oss_expire_time,
+            wx_mp_app_id,
+            wx_mp_app_secret,
+            wx_pay_api_host,
+            wx_pay_mch_id,
+            wx_pay_api_v3_private_key,
+            wx_pay_serial_no,
+            wx_pay_notify_url,
+            wx_pay_cert_path,
+            wx_pay_cert_key_path,
         }
     }
 }
