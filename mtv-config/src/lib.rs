@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, fs::{self, File}, io::Read};
 
 use lazy_static::lazy_static;
 
@@ -30,8 +30,8 @@ pub struct DataConfig {
     pub wx_pay_api_v3_private_key: String,
     pub wx_pay_serial_no: String,
     pub wx_pay_notify_url: String,
-    pub wx_pay_cert_path: String,
-    pub wx_pay_cert_key_path: String,
+    pub wx_pay_cert: String,
+    pub wx_pay_cert_key: String,
 }
 
 impl DataConfig {
@@ -63,8 +63,19 @@ impl DataConfig {
         let wx_pay_api_v3_private_key = env::var("WX_PAY_API_V3_PRIVATE_KEY").expect("WX_PAY_API_V3_PRIVATE_KEY must be set");
         let wx_pay_serial_no = env::var("WX_PAY_SERIAL_NO").expect("WX_PAY_SERIAL_NO must be set");
         let wx_pay_notify_url = env::var("WX_PAY_NOTIFY_URL").expect("WX_PAY_NOTIFY_URL must be set");
-        let wx_pay_cert_path = env::var("WX_PAY_CERT_PATH").expect("WX_PAY_CERT_PATH must be set");
-        let wx_pay_cert_key_path = env::var("WX_PAY_CERT_KEY_PATH").expect("WX_PAY_CERT_KEY_PATH must be set");
+        // 读取 env::var("WX_PAY_CERT_PATH").expect("WX_PAY_CERT_PATH must be set")
+        
+        let mut wx_pay_cert = "".to_string();
+
+        let mut file = File::open(env::var("WX_PAY_CERT_PATH").expect("WX_PAY_CERT_PATH must be set")).unwrap();
+        file.read_to_string(&mut wx_pay_cert).unwrap();
+
+        let mut wx_pay_cert_key = "".to_string(); 
+        let mut file = File::open(env::var("WX_PAY_CERT_KEY_PATH").expect("WX_PAY_CERT_KEY_PATH must be set")).unwrap();
+        file.read_to_string(&mut wx_pay_cert_key).unwrap();
+
+        log::debug!("wx_pay_cert_key: {}", wx_pay_cert_key);
+        println!("wx_pay_cert_key: {}", wx_pay_cert_key);
 
         DataConfig {
             log_level,
@@ -88,8 +99,8 @@ impl DataConfig {
             wx_pay_api_v3_private_key,
             wx_pay_serial_no,
             wx_pay_notify_url,
-            wx_pay_cert_path,
-            wx_pay_cert_key_path,
+            wx_pay_cert,
+            wx_pay_cert_key,
         }
     }
 }

@@ -3,6 +3,7 @@ pub mod order;
 pub mod pay;
 pub mod user;
 pub mod utils;
+pub mod goods;
 
 
 use actix_web::{web, Scope};
@@ -90,7 +91,7 @@ pub fn api() -> Scope {
                 // 订单列表
                 .route("", web::get().to(order::list))
                 // 订单详情
-                .route("/{id}", web::get().to(order::get))
+                .route("/{order_no}", web::get().to(order::get))
                 // 支付签名
                 .route("/pay", web::post().to(pay::pay))
                 // 支付回调
@@ -101,5 +102,19 @@ pub fn api() -> Scope {
                 .route("/recharges", web::get().to(order::recharges))
                 // 所有消费记录
                 .route("/consumes", web::get().to(order::consumes)),
+        )
+        // goods
+        .service(
+            web::scope("/goods")
+                // 创建商品
+                .route("", web::post().to(goods::create))
+                // 商品列表
+                .route("", web::get().to(goods::list))
+                // 商品详情
+                .route("/{id}", web::get().to(goods::get))
+                // 删除商品
+                .route("/{id}", web::delete().to(goods::delete))
+                // 更新商品
+                .route("/{id}", web::put().to(goods::update)),
         )
 }

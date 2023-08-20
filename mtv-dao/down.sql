@@ -87,3 +87,5 @@ drop table if exists users;
 drop table if exists orders;
 
 drop table if exists likes_records;
+
+drop table if EXISTS goods;

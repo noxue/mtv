@@ -1,7 +1,6 @@
 use chrono::Local;
 use mtv_dao::{order::*, Db, Page};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde::Serialize;
 
 use crate::{
     utils::{self, pay::WxPayNotify},
@@ -41,17 +40,51 @@ pub async fn add(user_id: i32, goods_id: i32) -> Result<Order> {
     Ok(order)
 }
 
+// 列出指定用户订单列表
+pub async fn list_by_user_id(user_id: i32, page: i64, size: i64) -> Result<Page<Vec<Order>>> {
+    let conn = Db::get_conn();
+    let page = mtv_dao::order::list_by_user_id(&conn, user_id, page, size).await?;
+    Ok(page)
+}
+
+// 查看订单支付情况
+pub async fn check(order_no: &str) -> Result<i32> {
+    let conn = Db::get_conn();
+    let status = mtv_dao::order::get_status(&conn, order_no).await?;
+    Ok(status)
+}
+
+// 根据订单号查看获取订单详情
+pub async fn get(order_no: &str) -> Result<Order> {
+    let conn = Db::get_conn();
+
+    let order = mtv_dao::order::get(&conn, order_no).await?;
+
+    Ok(order)
+}
+
+// recharge_record_list 充值列表
+pub async fn recharge_record_list(user_id: i32, page: i64, size: i64) -> Result<Page<Vec<RechargeRecord>>> {
+    let conn = Db::get_conn();
+    let page = mtv_dao::order::recharge_record_list(&conn, user_id, page, size).await?;
+    Ok(page)
+}
+
+// consume_record_list
+pub async fn consume_record_list(user_id: i32, page: i64, size: i64) -> Result<Page<Vec<ConsumeRecord>>> {
+    let conn = Db::get_conn();
+    let page = mtv_dao::order::consume_record_list(&conn, user_id, page, size).await?;
+    Ok(page)
+}
+
+
+
 // 支付订单
 pub async fn pay(order_no: &str, openid: &str) -> Result<impl Serialize> {
     let conn = Db::get_conn();
 
     // 获取订单信息
     let order = mtv_dao::order::get(&conn, order_no).await?;
-    if order.is_none() {
-        return Err("订单不存在".into());
-    }
-
-    let order = order.unwrap();
 
     let v = utils::pay::WX_PAY
         .prepay(
@@ -79,13 +112,9 @@ pub async fn pay_notify(notify_data: WxPayNotify) -> Result<String> {
     // 查询订单
     let conn = Db::get_conn();
     let order = mtv_dao::order::get(&conn, order_no).await?;
-    if order.is_none() {
-        return Err("订单不存在".into());
-    }
 
     // 如果已经支付，直接返回订单编号
     // 订单状态 0:未支付 1:成功，-1失败
-    let order = order.unwrap();
     if order.status == 1 {
         return Ok(order.order_no);
     }
@@ -114,7 +143,6 @@ pub async fn pay_notify(notify_data: WxPayNotify) -> Result<String> {
     let goods = goods.unwrap();
 
     if goods.is_vip {
-
         let expire_time = match goods.expire_type {
             0 => chrono::Duration::days((30 * goods.expire_count).into()),
             1 => chrono::Duration::days((90 * goods.expire_count).into()),
@@ -158,7 +186,7 @@ pub async fn pay_notify(notify_data: WxPayNotify) -> Result<String> {
                 }
             }
         );
-        // 添加开会员记录
+        // 添加开会员充值记录
         mtv_dao::order::add_recharge_record(&conn, order.user_id, order.amount, 0, description)
             .await?;
     } else {
@@ -169,7 +197,7 @@ pub async fn pay_notify(notify_data: WxPayNotify) -> Result<String> {
                 "更新用户积分出错"
             })?;
 
-        // 添加积分记录
+        // 添加充值记录
         mtv_dao::order::add_recharge_record(
             &conn,
             order.user_id,

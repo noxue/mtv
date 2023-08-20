@@ -14,7 +14,14 @@ pub async fn down_up() -> Result<()> {
     Ok(())
 }
 
-pub async fn login(code: &str, login_type: &str) -> Result<String> {
+#[derive(Debug, Serialize)]
+pub struct LoginResult {
+    pub token: String,
+    pub openid: String,
+    pub unionid: String,
+}
+
+pub async fn login(code: &str, login_type: &str) -> Result<LoginResult> {
     let (openid, unionid) = match login_type {
         "weapp" => login_weapp(code).await?,
         "mp" => login_mp(code).await?,
@@ -51,7 +58,7 @@ pub async fn login(code: &str, login_type: &str) -> Result<String> {
 
     let token = match REDIS
         .get_connection()
-        .map_err(|e|{
+        .map_err(|e| {
             log::error!("获取redis连接出错:{:?}", e);
             "获取redis连接出错"
         })?
@@ -82,7 +89,11 @@ pub async fn login(code: &str, login_type: &str) -> Result<String> {
 
     log::debug!("user:{:?}", user);
 
-    Ok(token)
+    Ok(LoginResult {
+        token,
+        openid,
+        unionid,
+    })
 }
 
 #[derive(Deserialize, Debug)]

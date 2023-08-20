@@ -25,7 +25,7 @@ lazy_static::lazy_static! {
         mchid: CONFIG.wx_pay_mch_id.clone(),
         mch_certificate_serial_number: CONFIG.wx_pay_serial_no.clone(),
         mch_api_v3_key: CONFIG.wx_pay_api_v3_private_key.clone(),
-        private_key: "".to_string(),
+        private_key:  CONFIG.wx_pay_cert_key.clone(),
         description: "".to_string(),
         out_trade_no: "".to_string(),
         attach: "".to_string(),

@@ -33,6 +33,39 @@ pub async fn add_recharge_record(
     Ok(row)
 }
 
+// 查看指定用户的充值记录
+pub async fn recharge_record_list(
+    conn: &Conn,
+    user_id: i32,
+    page: i64,
+    size: i64,
+) -> anyhow::Result<Page<Vec<RechargeRecord>>> {
+    let rows = conn
+        .query(
+            r#" select * from recharge_records where user_id = $1 order by create_time desc limit $2 offset $3 "#,
+            &[&user_id, &size, &(&(page - 1) * size)],
+        )
+        .await?;
+    let total = conn
+        .query_one(
+            r#" select count(*) from recharge_records where user_id = $1 "#,
+            &[&user_id],
+        )
+        .await?;
+
+    let total: i64 = total.get(0);
+
+    let rrs = rows.iter().map(|row| row.try_into().unwrap()).collect();
+    Ok(Page {
+        total,
+        page,
+        size,
+        data: rrs,
+    })
+}
+
+
+
 #[derive(Debug, Clone, Serialize, Table)]
 pub struct ConsumeRecord {
     pub id: i32,
@@ -140,7 +173,7 @@ pub async fn add(
 }
 
 // 根据订单号查询订单
-pub async fn get(conn: &Conn, order_no: &str) -> anyhow::Result<Option<Order>> {
+pub async fn get(conn: &Conn, order_no: &str) -> anyhow::Result<Order> {
     let row = conn
         .query_opt(
             r#" select * from orders where order_no = $1 limit 1 "#,
@@ -148,9 +181,27 @@ pub async fn get(conn: &Conn, order_no: &str) -> anyhow::Result<Option<Order>> {
         )
         .await?;
     if row.is_none() {
-        return Ok(None);
+        // 订单不存在
+        return Err(anyhow::anyhow!("订单不存在"));
     }
-    Ok(Some(row.unwrap().try_into()?))
+    Ok(row.unwrap().try_into()?)
+}
+
+// 根据订单号查询订单状态
+pub async fn get_status(conn: &Conn, order_no: &str) -> anyhow::Result<i32> {
+    let row = conn
+        .query_opt(
+            r#" select status from orders where order_no = $1 limit 1 "#,
+            &[&order_no],
+        )
+        .await?;
+    if row.is_none() {
+        // 订单不存在
+        return Err(anyhow::anyhow!("订单不存在"));
+    }
+    let row = row.unwrap();
+    let status: i32 = row.get(0);
+    Ok(status)
 }
 
 // 更新订单状态

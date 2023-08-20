@@ -1633,6 +1633,7 @@ dependencies = [
  "dotenv",
  "dotenv_codegen",
  "lazy_static",
+ "log",
 ]
 
 [[package]]
