@@ -342,3 +342,4 @@ CREATE TABLE goods (
     expire_count int4 NOT NULL DEFAULT 0,
     create_time timestamp with time zone DEFAULT now()
 );
+ 

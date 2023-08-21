@@ -98,10 +98,10 @@ pub fn api() -> Scope {
                 .route("/pay/notify", web::post().to(pay::notify))
                 // 检测支付情况
                 .route("/{order_id}/pay/check", web::get().to(pay::check))
-                // 所有充值记录
-                .route("/recharges", web::get().to(order::recharges))
-                // 所有消费记录
-                .route("/consumes", web::get().to(order::consumes)),
+                // // 所有充值记录
+                // .route("/recharges", web::get().to(order::recharges))
+                // // 所有消费记录
+                // .route("/consumes", web::get().to(order::consumes)),
         )
         // goods
         .service(

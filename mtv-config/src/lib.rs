@@ -1,4 +1,8 @@
-use std::{env, fs::{self, File}, io::Read};
+use std::{
+    env,
+    fs::{self, File},
+    io::Read,
+};
 
 use lazy_static::lazy_static;
 
@@ -6,12 +10,16 @@ lazy_static! {
     pub static ref CONFIG: DataConfig = DataConfig::init();
 }
 
+pub struct WeApp {
+    pub id: String,
+    pub secret: String,
+}
+
 pub struct DataConfig {
     pub log_level: String,
     pub db: String,
     pub app_host: String,
-    pub weapp_appid: String,
-    pub weapp_secret: String,
+    pub weapps: Vec<WeApp>,
     pub redis_url: String,
     pub admin_ids: Vec<i32>,
 
@@ -30,7 +38,9 @@ pub struct DataConfig {
     pub wx_pay_api_v3_private_key: String,
     pub wx_pay_serial_no: String,
     pub wx_pay_notify_url: String,
+    // apiclient_cert.pem
     pub wx_pay_cert: String,
+    // apiclient_key.pem
     pub wx_pay_cert_key: String,
 }
 
@@ -49,40 +59,54 @@ impl DataConfig {
             .map(|x| x.parse::<i32>().unwrap())
             .collect::<Vec<i32>>();
         let oss_api_host = env::var("OSS_API_HOST").expect("OSS_API_HOST must be set");
-        let oss_access_key_id = env::var("OSS_ACCESS_KEY_ID").expect("OSS_ACCESS_KEY_ID must be set");
-        let oss_access_key_secret = env::var("OSS_ACCESS_KEY_SECRET").expect("OSS_ACCESS_KEY_SECRET must be set");
+        let oss_access_key_id =
+            env::var("OSS_ACCESS_KEY_ID").expect("OSS_ACCESS_KEY_ID must be set");
+        let oss_access_key_secret =
+            env::var("OSS_ACCESS_KEY_SECRET").expect("OSS_ACCESS_KEY_SECRET must be set");
         let oss_host = env::var("OSS_HOST").expect("OSS_HOST must be set");
         let oss_callback_url = env::var("OSS_CALLBACK_URL").expect("OSS_CALLBACK_URL must be set");
         let oss_bucket_name = env::var("OSS_BUCKET_NAME").expect("OSS_BUCKET_NAME must be set");
-        let oss_expire_time = env::var("OSS_EXPIRE_TIME").expect("OSS_EXPIRE_TIME must be set").parse::<i32>().unwrap();
+        let oss_expire_time = env::var("OSS_EXPIRE_TIME")
+            .expect("OSS_EXPIRE_TIME must be set")
+            .parse::<i32>()
+            .unwrap();
 
         let wx_mp_app_id = env::var("WX_MP_APP_ID").expect("WX_MP_APP_ID must be set");
         let wx_mp_app_secret = env::var("WX_MP_APP_SECRET").expect("WX_MP_APP_SECRET must be set");
         let wx_pay_api_host = env::var("WX_PAY_API_HOST").expect("WX_PAY_API_HOST must be set");
         let wx_pay_mch_id = env::var("WX_PAY_MCH_ID").expect("WX_PAY_MCH_ID must be set");
-        let wx_pay_api_v3_private_key = env::var("WX_PAY_API_V3_PRIVATE_KEY").expect("WX_PAY_API_V3_PRIVATE_KEY must be set");
+        let wx_pay_api_v3_private_key =
+            env::var("WX_PAY_API_V3_PRIVATE_KEY").expect("WX_PAY_API_V3_PRIVATE_KEY must be set");
         let wx_pay_serial_no = env::var("WX_PAY_SERIAL_NO").expect("WX_PAY_SERIAL_NO must be set");
-        let wx_pay_notify_url = env::var("WX_PAY_NOTIFY_URL").expect("WX_PAY_NOTIFY_URL must be set");
-        // 读取 env::var("WX_PAY_CERT_PATH").expect("WX_PAY_CERT_PATH must be set")
-        
+        let wx_pay_notify_url =
+            env::var("WX_PAY_NOTIFY_URL").expect("WX_PAY_NOTIFY_URL must be set");
+
         let mut wx_pay_cert = "".to_string();
 
-        let mut file = File::open(env::var("WX_PAY_CERT_PATH").expect("WX_PAY_CERT_PATH must be set")).unwrap();
+        let mut file =
+            File::open(env::var("WX_PAY_CERT_PATH").expect("WX_PAY_CERT_PATH must be set"))
+                .unwrap();
         file.read_to_string(&mut wx_pay_cert).unwrap();
 
-        let mut wx_pay_cert_key = "".to_string(); 
-        let mut file = File::open(env::var("WX_PAY_CERT_KEY_PATH").expect("WX_PAY_CERT_KEY_PATH must be set")).unwrap();
+        let mut wx_pay_cert_key = "".to_string();
+        let mut file =
+            File::open(env::var("WX_PAY_CERT_KEY_PATH").expect("WX_PAY_CERT_KEY_PATH must be set"))
+                .unwrap();
         file.read_to_string(&mut wx_pay_cert_key).unwrap();
 
-        log::debug!("wx_pay_cert_key: {}", wx_pay_cert_key);
-        println!("wx_pay_cert_key: {}", wx_pay_cert_key);
+        let mut weapps = vec![];
+        for (i, appid) in weapp_appid.split(",").enumerate() {
+            weapps.push(WeApp {
+                id: appid.trim().to_string(),
+                secret: weapp_secret.split(",").nth(i).unwrap().trim().to_string(),
+            });
+        }
 
         DataConfig {
             log_level,
             db,
             app_host,
-            weapp_appid,
-            weapp_secret,
+            weapps,
             redis_url,
             admin_ids,
             oss_api_host,
@@ -102,5 +126,10 @@ impl DataConfig {
             wx_pay_cert,
             wx_pay_cert_key,
         }
+    }
+
+    // 根据appid获取WeApp
+    pub fn get_weapp(&self, appid: &str) -> Option<&WeApp> {
+        self.weapps.iter().find(|x| x.id == appid)
     }
 }

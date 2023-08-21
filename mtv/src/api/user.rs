@@ -9,15 +9,22 @@ use super::PageQuery;
 
 #[derive(Debug, Deserialize)]
 pub struct LoginInfo {
+    pub appid: Option<String>,
     pub code: String,
     pub login_type: String, // mp or  weapp
 }
 
 pub async fn login(data: web::Json<LoginInfo>) -> actix_web::Result<impl Responder> {
     log::debug!("login: {:?}", data);
-    let LoginInfo { code, login_type } = data.into_inner();
+    let LoginInfo {
+        appid,
+        code,
+        login_type,
+    } = data.into_inner();
 
-    let token = srv::user::login(&code, &login_type).await?;
+    let appid = appid.unwrap_or_default();
+
+    let token = srv::user::login(&appid, &code, &login_type).await?;
     log::debug!("login res: {:?}", token);
 
     let mut res = Res::new();
@@ -94,12 +101,24 @@ pub async fn recents(me: Me) -> actix_web::Result<impl Responder> {
     Ok(res)
 }
 
-// 充值记录
-pub async fn recharges(me: Me) -> actix_web::Result<impl Responder> {
-    Ok("")
+// 充值记录列表
+pub async fn recharges(me: Me, query: web::Query<PageQuery>) -> actix_web::Result<impl Responder> {
+    let PageQuery { page, size } = query.into_inner();
+    let page = page.unwrap_or(1);
+    let size = size.unwrap_or(20);
+    let v = mtv_srv::order::recharge_record_list(me.id, page, size).await?;
+    let mut res = Res::new();
+    res.set_data(v);
+    Ok(res)
 }
 
 // 消费记录
-pub async fn consumes(me: Me) -> actix_web::Result<impl Responder> {
-    Ok("")
+pub async fn consumes(me: Me, query: web::Query<PageQuery>) -> actix_web::Result<impl Responder> {
+    let PageQuery { page, size } = query.into_inner();
+    let page = page.unwrap_or(1);
+    let size = size.unwrap_or(20);
+    let v = mtv_srv::order::consume_record_list(me.id, page, size).await?;
+    let mut res = Res::new();
+    res.set_data(v);
+    Ok(res)
 }

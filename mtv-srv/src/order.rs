@@ -1,10 +1,11 @@
 use chrono::Local;
 use mtv_dao::{order::*, Db, Page};
 use serde::Serialize;
+use wxpay::WxPayNotify;
 
 use crate::{
-    utils::{self, pay::WxPayNotify},
-    Result,
+    utils::{self,},
+    Result, pay::PAY,
 };
 
 // 添加订单
@@ -80,19 +81,20 @@ pub async fn consume_record_list(user_id: i32, page: i64, size: i64) -> Result<P
 
 
 // 支付订单
-pub async fn pay(order_no: &str, openid: &str) -> Result<impl Serialize> {
+pub async fn pay(order_no: &str, appid:&str,  openid: &str) -> Result<impl Serialize> {
     let conn = Db::get_conn();
 
     // 获取订单信息
     let order = mtv_dao::order::get(&conn, order_no).await?;
 
-    let v = utils::pay::WX_PAY
-        .prepay(
-            order.order_no,
-            order.amount,
-            openid.to_string(),
-            Some(order.description),
-            None,
+    let v = PAY
+        .pay(
+            appid,
+            wxpay::PayType::JsApi,
+            &order.description,
+            &order.order_no,
+            order.amount as u32,
+            Some(openid.to_string()),
         )
         .await?;
 
@@ -100,12 +102,7 @@ pub async fn pay(order_no: &str, openid: &str) -> Result<impl Serialize> {
 }
 
 pub async fn pay_notify(notify_data: WxPayNotify) -> Result<String> {
-    let data = utils::pay::WX_PAY
-        .decode(notify_data.clone())
-        .map_err(|e| {
-            log::error!("解析微信支付通知出错: {}", e);
-            "解析微信支付通知出错"
-        })?;
+    let data = PAY.decode(&notify_data)?;
 
     let order_no = &data.out_trade_no;
 

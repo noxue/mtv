@@ -1,3 +1,11 @@
 
 [workspace]
-members = ["mtv", "sqlrs", "sqlrs-macros", "mtv-dao", "mtv-srv", "mtv-config"]
+members = [
+    "mtv",
+    "sqlrs",
+    "sqlrs-macros",
+    "mtv-dao",
+    "mtv-srv",
+    "mtv-config",
+    "wxpay",
+]

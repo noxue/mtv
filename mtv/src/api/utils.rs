@@ -8,25 +8,6 @@ use crate::{middleware::Me, utils::res::Res};
 
 use super::PageQuery;
 
-#[derive(Debug, Deserialize)]
-pub struct LoginInfo {
-    pub code: String,
-    pub login_type: String, // mp or  weapp
-}
-
-pub async fn login(data: web::Json<LoginInfo>) -> actix_web::Result<impl Responder> {
-    log::debug!("login: {:?}", data);
-    let LoginInfo { code, login_type } = data.into_inner();
-
-    let token = srv::user::login(&code, &login_type).await?;
-    log::debug!("login res: {:?}", token);
-
-    let mut res = Res::new();
-    res.set_data(token);
-
-    Ok(res)
-}
-
 // 生成上传oss的token
 pub async fn oss_token(me: Me) -> actix_web::Result<impl Responder> {
     let uid = me.id;

@@ -1,11 +1,7 @@
 use chrono::Local;
 use mtv_dao::{order::*, Db, Page};
 use serde::Serialize;
-
-use crate::{
-    utils::{self, pay::WxPayNotify},
-    Result,
-};
+use crate::Result;
 
 // // 添加订单
 // pub async fn add(user_id: i32, goods_id: i32) -> Result<Order> {
@@ -40,14 +36,13 @@ use crate::{
 //     Ok(order)
 // }
 
-
 // 添加商品
 pub async fn add(
     name: String,
     price: i32,
     description: String,
     score: i32,
-    is_hot:bool,
+    is_hot: bool,
     is_vip: bool,
     expire_type: i32,
     expire_count: i32,
@@ -103,7 +98,7 @@ pub async fn update(
     price: i32,
     description: String,
     score: i32,
-    is_hot:bool,
+    is_hot: bool,
     is_vip: bool,
     expire_type: i32,
     expire_count: i32,

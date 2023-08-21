@@ -41,24 +41,24 @@ pub async fn get(order_no: web::Path<String>) -> Result<impl Responder> {
     Ok(res)
 }
 
-// 充值记录列表
-pub async fn recharges(me: Me, query: web::Query<PageQuery>) -> Result<impl Responder> {
-    let PageQuery { page, size } = query.into_inner();
-    let page = page.unwrap_or(1);
-    let size = size.unwrap_or(20);
-    let v = mtv_srv::order::recharge_record_list(me.id, page, size).await?;
-    let mut res = Res::new();
-    res.set_data(v);
-    Ok(res)
-}
+// // 充值记录列表
+// pub async fn recharges(me: Me, query: web::Query<PageQuery>) -> Result<impl Responder> {
+//     let PageQuery { page, size } = query.into_inner();
+//     let page = page.unwrap_or(1);
+//     let size = size.unwrap_or(20);
+//     let v = mtv_srv::order::recharge_record_list(me.id, page, size).await?;
+//     let mut res = Res::new();
+//     res.set_data(v);
+//     Ok(res)
+// }
 
-// 消费记录
-pub async fn consumes(me: Me, query: web::Query<PageQuery>) -> Result<impl Responder> {
-    let PageQuery { page, size } = query.into_inner();
-    let page = page.unwrap_or(1);
-    let size = size.unwrap_or(20);
-    let v = mtv_srv::order::consume_record_list(me.id, page, size).await?;
-    let mut res = Res::new();
-    res.set_data(v);
-    Ok(res)
-}
+// // 消费记录
+// pub async fn consumes(me: Me, query: web::Query<PageQuery>) -> Result<impl Responder> {
+//     let PageQuery { page, size } = query.into_inner();
+//     let page = page.unwrap_or(1);
+//     let size = size.unwrap_or(20);
+//     let v = mtv_srv::order::consume_record_list(me.id, page, size).await?;
+//     let mut res = Res::new();
+//     res.set_data(v);
+//     Ok(res)
+// }

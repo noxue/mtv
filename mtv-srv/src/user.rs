@@ -21,9 +21,9 @@ pub struct LoginResult {
     pub unionid: String,
 }
 
-pub async fn login(code: &str, login_type: &str) -> Result<LoginResult> {
+pub async fn login(appid: &str, code: &str, login_type: &str) -> Result<LoginResult> {
     let (openid, unionid) = match login_type {
-        "weapp" => login_weapp(code).await?,
+        "weapp" => login_weapp(appid, code).await?,
         "mp" => login_mp(code).await?,
         _ => {
             return Err("登录类型不支持".into());
@@ -104,11 +104,15 @@ struct WeappLoginResponse {
     errcode: Option<i32>,
     errmsg: Option<String>,
 }
-async fn login_weapp(code: &str) -> Result<(String, String)> {
+async fn login_weapp(appid: &str, code: &str) -> Result<(String, String)> {
+    let weapp = CONFIG
+        .get_weapp(appid)
+        .ok_or(anyhow::anyhow!("appid:{} 未配置", appid))?;
+
     let url = format!(
         "https://api.weixin.qq.com/sns/jscode2session?appid={appid}&secret={secret}&js_code={code}&grant_type=authorization_code",
-        appid=CONFIG.weapp_appid,
-        secret=CONFIG.weapp_secret,
+        appid=weapp.id,
+        secret=weapp.secret,
         code=code
     );
     let res = reqwest::get(url)
@@ -150,8 +154,8 @@ struct MpLoginResponse {
 async fn login_mp(code: &str) -> Result<(String, String)> {
     let url = format!(
             "https://api.weixin.qq.com/sns/oauth2/access_token?appid={appid}&secret={secret}&code={code}&grant_type=authorization_code",
-            appid=CONFIG.weapp_appid,
-            secret=CONFIG.weapp_secret,
+            appid=CONFIG.wx_mp_app_id,
+            secret=CONFIG.wx_mp_app_secret,
             code=code,
         );
     let res = reqwest::get(url).await.context("请求微信登录接口出错")?;
