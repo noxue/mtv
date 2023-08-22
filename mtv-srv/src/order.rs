@@ -4,8 +4,9 @@ use serde::Serialize;
 use wxpay::WxPayNotify;
 
 use crate::{
-    utils::{self,},
-    Result, pay::PAY,
+    pay::PAY,
+    utils::{self},
+    Result,
 };
 
 // 添加订单
@@ -65,27 +66,39 @@ pub async fn get(order_no: &str) -> Result<Order> {
 }
 
 // recharge_record_list 充值列表
-pub async fn recharge_record_list(user_id: i32, page: i64, size: i64) -> Result<Page<Vec<RechargeRecord>>> {
+pub async fn recharge_record_list(
+    user_id: i32,
+    page: i64,
+    size: i64,
+) -> Result<Page<Vec<RechargeRecord>>> {
     let conn = Db::get_conn();
     let page = mtv_dao::order::recharge_record_list(&conn, user_id, page, size).await?;
     Ok(page)
 }
 
 // consume_record_list
-pub async fn consume_record_list(user_id: i32, page: i64, size: i64) -> Result<Page<Vec<ConsumeRecord>>> {
+pub async fn consume_record_list(
+    user_id: i32,
+    page: i64,
+    size: i64,
+) -> Result<Page<Vec<ConsumeRecord>>> {
     let conn = Db::get_conn();
     let page = mtv_dao::order::consume_record_list(&conn, user_id, page, size).await?;
     Ok(page)
 }
 
-
-
 // 支付订单
-pub async fn pay(order_no: &str, appid:&str,  openid: &str) -> Result<impl Serialize> {
+pub async fn pay(order_no: &str, appid: &str, openid: &str) -> Result<impl Serialize> {
     let conn = Db::get_conn();
 
     // 获取订单信息
     let order = mtv_dao::order::get(&conn, order_no).await?;
+
+    // 如果已经支付，直接返回订单编号
+    // 订单状态 0:未支付 1:成功，-1失败
+    if order.status == 1 {
+        return Err("订单已支付，请重新创建订单".into());
+    }
 
     let v = PAY
         .pay(

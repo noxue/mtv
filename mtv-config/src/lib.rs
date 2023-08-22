@@ -33,7 +33,6 @@ pub struct DataConfig {
 
     pub wx_mp_app_id: String,
     pub wx_mp_app_secret: String,
-    pub wx_pay_api_host: String,
     pub wx_pay_mch_id: String,
     pub wx_pay_api_v3_private_key: String,
     pub wx_pay_serial_no: String,
@@ -73,7 +72,6 @@ impl DataConfig {
 
         let wx_mp_app_id = env::var("WX_MP_APP_ID").expect("WX_MP_APP_ID must be set");
         let wx_mp_app_secret = env::var("WX_MP_APP_SECRET").expect("WX_MP_APP_SECRET must be set");
-        let wx_pay_api_host = env::var("WX_PAY_API_HOST").expect("WX_PAY_API_HOST must be set");
         let wx_pay_mch_id = env::var("WX_PAY_MCH_ID").expect("WX_PAY_MCH_ID must be set");
         let wx_pay_api_v3_private_key =
             env::var("WX_PAY_API_V3_PRIVATE_KEY").expect("WX_PAY_API_V3_PRIVATE_KEY must be set");
@@ -118,7 +116,6 @@ impl DataConfig {
             oss_expire_time,
             wx_mp_app_id,
             wx_mp_app_secret,
-            wx_pay_api_host,
             wx_pay_mch_id,
             wx_pay_api_v3_private_key,
             wx_pay_serial_no,
