@@ -21,7 +21,10 @@ pub struct AddData {
 }
 
 // 添加影片
-pub async fn add(data: web::Json<AddData>) -> Result<impl Responder> {
+pub async fn add(me:Me, data: web::Json<AddData>) -> Result<impl Responder> {
+
+    me.check_admin()?;
+
     let AddData {
         name,
         cover,

@@ -54,7 +54,19 @@ pub async fn login(appid: &str, code: &str, login_type: &str) -> Result<LoginRes
         }
     };
 
-    let token_key = format!("user_token_{}", user.id);
+    let token = gen_token(user.id).await?;
+
+    log::debug!("user:{:?}", user);
+
+    Ok(LoginResult {
+        token,
+        openid,
+        unionid,
+    })
+}
+
+async fn gen_token(user_id: i32) -> Result<String> {
+    let token_key = format!("user_token_{}", user_id);
 
     let token = match REDIS
         .get_connection()
@@ -79,21 +91,13 @@ pub async fn login(appid: &str, code: &str, login_type: &str) -> Result<LoginRes
             REDIS
                 .get_connection()
                 .context("获取redis连接出错")?
-                .set_ex::<String, String, ()>(key, user.id.to_string(), 60 * 60 * 24 * 30)
-                .context("设置token出错")?;
-
+                .set_ex::<String, i32, ()>(key, user_id, 60 * 60 * 24 * 30)
+                .context("设置uid出错")?;
             token
         }
     };
     log::debug!("redis:{:?}", token);
-
-    log::debug!("user:{:?}", user);
-
-    Ok(LoginResult {
-        token,
-        openid,
-        unionid,
-    })
+    Ok(token)
 }
 
 #[derive(Deserialize, Debug)]
@@ -173,6 +177,42 @@ async fn login_mp(code: &str) -> Result<(String, String)> {
         data.openid.unwrap_or_default(),
         data.unionid.unwrap_or_default(),
     ))
+}
+
+// 设置手机号和密码
+pub async fn set_phone_and_password(uid: i32, phone: &str, password: &str) -> Result<()> {
+    let conn = Db::get_conn();
+    let password = bcrypt::hash(password, bcrypt::DEFAULT_COST).map_err(|e| {
+        log::error!("密码加密出错:{:?}", e);
+        "密码加密出错"
+    })?;
+    log::debug!("password:{}", password);
+    mtv_dao::user::set_phone_and_password(&conn, uid, phone, &password)
+        .await
+        .map_err(|e| {
+            log::error!("设置手机号和密码出错:{:?}", e);
+            "设置手机号和密码出错"
+        })?;
+    Ok(())
+}
+
+// 根据手机号密码登录
+pub async fn login_phone(phone: &str, password: &str) -> Result<String> {
+    let conn = Db::get_conn();
+    let user = mtv_dao::user::get_by_phone(&conn, phone).await?;
+    let encoded_password = user.auth.password.as_ref().ok_or("密码为空")?;
+    let is_match = bcrypt::verify(password, encoded_password).map_err(|e| {
+        log::error!("密码验证出错:{:?}", e);
+        "密码验证出错"
+    })?;
+
+    if !is_match {
+        return Err("密码错误".into());
+    }
+
+    let token = gen_token(user.id).await?;
+
+    Ok(token)
 }
 
 /// 根据token获取uid

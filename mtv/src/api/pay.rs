@@ -1,3 +1,4 @@
+use crate::middleware::AppId;
 use crate::utils::res::Res;
 use actix_web::web;
 use actix_web::Responder;
@@ -18,13 +19,15 @@ pub async fn check(order_no: web::Path<String>) -> Result<impl Responder> {
 #[derive(Debug, Deserialize, Clone)]
 pub struct PayParam {
     pub order_no: String,
-    pub appid: String,
     pub openid: String,
 }
 
 // 生成支付签名
-pub async fn pay(pay_param: web::Json<PayParam>) -> Result<impl Responder> {
-    let PayParam { order_no, appid,  openid } = pay_param.into_inner();
+pub async fn pay(pay_param: web::Json<PayParam>, appid:AppId) -> Result<impl Responder> {
+
+    let appid = appid.get_appid()?;
+
+    let PayParam { order_no,  openid } = pay_param.into_inner();
 
     let r = mtv_srv::order::pay(&order_no, &appid, &openid).await?;
     let mut res = Res::new();

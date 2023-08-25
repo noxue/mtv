@@ -3,26 +3,25 @@ use serde::Deserialize;
 
 use mtv_srv as srv;
 
-use crate::{middleware::Me, utils::res::Res};
+use crate::{middleware::{Me, AppId}, utils::res::Res};
 
 use super::PageQuery;
 
 #[derive(Debug, Deserialize)]
 pub struct LoginInfo {
-    pub appid: Option<String>,
     pub code: String,
     pub login_type: String, // mp or  weapp
 }
 
-pub async fn login(data: web::Json<LoginInfo>) -> actix_web::Result<impl Responder> {
+pub async fn login(data: web::Json<LoginInfo>, appid:AppId) -> actix_web::Result<impl Responder> {
     log::debug!("login: {:?}", data);
     let LoginInfo {
-        appid,
         code,
         login_type,
     } = data.into_inner();
 
-    let appid = appid.unwrap_or_default();
+    let appid = appid.get_appid()?;
+
 
     let token = srv::user::login(&appid, &code, &login_type).await?;
     log::debug!("login res: {:?}", token);
@@ -30,6 +29,33 @@ pub async fn login(data: web::Json<LoginInfo>) -> actix_web::Result<impl Respond
     let mut res = Res::new();
     res.set_data(token);
 
+    Ok(res)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LoginPhone {
+    pub phone: String,
+    pub password: String,
+}
+
+pub async fn login_phone(data: web::Json<LoginPhone>) -> actix_web::Result<impl Responder> {
+    let data = data.into_inner();
+    let token = srv::user::login_phone(&data.phone, &data.password).await?;
+    let mut res = Res::new();
+    res.set_data(token);
+    Ok(res)
+}
+
+// 设置手机号密码
+pub async fn set_phone_password(
+    me: Me,
+    data: web::Json<LoginPhone>,
+) -> actix_web::Result<impl Responder> {
+    let data = data.into_inner();
+    log::debug!("set_phone_password: {:?}", data);
+    srv::user::set_phone_and_password(me.id, &data.phone, &data.password).await?;
+    let mut res = Res::new();
+    res.set_data("");
     Ok(res)
 }
 

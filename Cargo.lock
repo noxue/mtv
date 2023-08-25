@@ -1701,6 +1701,7 @@ dependencies = [
  "aes-gcm",
  "anyhow",
  "base64 0.21.2",
+ "bcrypt",
  "chrono",
  "crypto",
  "hex",

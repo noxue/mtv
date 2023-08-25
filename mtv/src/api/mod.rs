@@ -1,10 +1,9 @@
+pub mod goods;
 pub mod movie;
 pub mod order;
 pub mod pay;
 pub mod user;
 pub mod utils;
-pub mod goods;
-
 
 use actix_web::{web, Scope};
 use serde::Deserialize;
@@ -28,12 +27,18 @@ pub fn api() -> Scope {
     web::scope("/api")
         .route("/down_up", web::get().to(down_up))
         .route("/upload/token", web::get().to(utils::oss_token))
+        .route("/login", web::post().to(user::login))
+        // login_phone
+        .route("/login_phone", web::post().to(user::login_phone))
         .service(
             web::scope("/users")
                 .route("", web::get().to(user::users))
                 // 列出指定渠道的用户列表
                 .route("/channel/{channel}", web::get().to(user::users_by_channel))
-                .route("/login", web::post().to(user::login))
+                .route(
+                    "/set_phone_password",
+                    web::post().to(user::set_phone_password),
+                )
                 .route("/me", web::get().to(user::me))
                 // 设置渠道来源
                 .route("/channel", web::post().to(user::set_channel))
@@ -64,20 +69,11 @@ pub fn api() -> Scope {
                 // 影片列表
                 .route("/{movie_id}/videos", web::get().to(movie::list_video))
                 // 更新影片
-                .route(
-                    "/videos/{video_id}",
-                    web::put().to(movie::update_video),
-                )
+                .route("/videos/{video_id}", web::put().to(movie::update_video))
                 // 获得影片，在其中执行扣除金币的操作，如果成功返回影片信息，如果扣费失败 返回对应错误，比如金币不足
-                .route(
-                    "/videos/{video_id}",
-                    web::get().to(movie::get_video),
-                )
+                .route("/videos/{video_id}", web::get().to(movie::get_video))
                 // 删除影片
-                .route(
-                    "/videos/{video_id}",
-                    web::delete().to(movie::delete_video),
-                )
+                .route("/videos/{video_id}", web::delete().to(movie::delete_video))
                 // 追剧
                 .route("/follow", web::post().to(movie::follow))
                 // 点赞
@@ -97,11 +93,10 @@ pub fn api() -> Scope {
                 // 支付回调
                 .route("/pay/notify", web::post().to(pay::notify))
                 // 检测支付情况
-                .route("/{order_id}/pay/check", web::get().to(pay::check))
-                // // 所有充值记录
-                // .route("/recharges", web::get().to(order::recharges))
-                // // 所有消费记录
-                // .route("/consumes", web::get().to(order::consumes)),
+                .route("/{order_id}/pay/check", web::get().to(pay::check)), // // 所有充值记录
+                                                                            // .route("/recharges", web::get().to(order::recharges))
+                                                                            // // 所有消费记录
+                                                                            // .route("/consumes", web::get().to(order::consumes)),
         )
         // goods
         .service(

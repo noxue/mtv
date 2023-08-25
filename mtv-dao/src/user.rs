@@ -191,16 +191,25 @@ pub async fn set_phone_and_password(
     phone: &str,
     password: &str,
 ) -> anyhow::Result<()> {
-    let row = conn
+    let m = conn
         .execute(
             r#"
-    update users set auth = jsonb_set(auth, '{phone}', $1::jsonb, '{password}', $2::jsonb) where id = $3
+    update users set auth = jsonb_set(auth, '{phone}', $1::jsonb) where id = $2
     "#,
-            &[&json!(phone), &json!(password), &userid],
+            &[&json!(phone), &userid],
         )
         .await?;
 
-    if row == 0 {
+    // set password
+    let n = conn
+        .execute(
+            r#"
+    update users set auth = jsonb_set(auth, '{password}', $1::jsonb) where id = $2
+    "#,
+            &[&json!(password), &userid],
+        )
+        .await?;
+    if m+n == 0 {
         anyhow::bail!("未找到用户");
     }
 
@@ -245,6 +254,24 @@ pub async fn get_by_unionid_or_openid(
     } else {
         Ok(None)
     }
+}
+
+// 根据手机查找用户
+pub async fn get_by_phone(conn: &Conn, phone: &str) -> anyhow::Result<User> {
+    let row = conn
+        .query_opt(
+            r#"
+    select * from users where auth->>'phone' = $1
+    "#,
+            &[&phone],
+        )
+        .await?;
+
+    if row.is_none() {
+        anyhow::bail!("未找到用户");
+    }
+
+    Ok(row.unwrap().try_into()?)
 }
 
 /// 根据id删除用户

@@ -1,3 +1,5 @@
+use std::any;
+
 use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use futures::future::{err, ok, Ready};
 use mtv_config::CONFIG;
@@ -11,6 +13,13 @@ pub struct Me {
 impl Me{
     pub fn is_admin(&self)->bool{
         CONFIG.admin_ids.contains(&self.id)
+    }
+    pub fn check_admin(&self)->mtv_srv::Result<()>{
+        if !self.is_admin(){
+            Err("您不是管理员".into())
+        }else{
+            Ok(())
+        }
     }
 }
 
