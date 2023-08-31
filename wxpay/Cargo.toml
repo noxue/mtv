@@ -10,7 +10,7 @@ keywords = ["pay", "wxpay"]
 
 [dependencies]
 anyhow = "1"
-base64 = "0.21"
+base64 = "0.13"
 chrono = "0.4"
 crypto = "0.5"
 rand = "0.8"

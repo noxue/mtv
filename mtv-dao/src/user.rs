@@ -302,7 +302,7 @@ pub async fn update_score(conn: &Conn, userid: i32, score: i32) -> anyhow::Resul
         .await?;
 
     if row == 0 {
-        anyhow::bail!("积分不足");
+        anyhow::bail!("金币不足,请充值");
     }
     Ok(())
 }

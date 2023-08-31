@@ -93,6 +93,7 @@ impl Db {
     pub fn get_conn() -> Conn {
         let db = DB.get().expect("请先调用Db::init");
        
+       
         let conn = match db.lock() {
             Ok(conn) => conn,
             Err(e) => {

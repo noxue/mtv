@@ -38,6 +38,7 @@ pub async fn pay(pay_param: web::Json<PayParam>, appid:AppId) -> Result<impl Res
 
 // 支付回调
 pub async fn notify(notify_data: web::Json<WxPayNotify>) -> Result<impl Responder> {
+    log::debug!("notify_data:{:?}", notify_data);
     let data = mtv_srv::order::pay_notify(notify_data.into_inner()).await?;
     let mut res = Res::new();
     res.set_data(data);

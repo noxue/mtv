@@ -249,3 +249,34 @@ pub async fn list_by_user_id(
         data: orders,
     })
 }
+
+// 统计指定渠道用户的充值记录
+pub async fn recharge_record_list_by_channel(
+    conn: &Conn,
+    channel: &str,
+    page: i64,
+    size: i64,
+) -> anyhow::Result<Page<Vec<RechargeRecord>>> {
+    let rows = conn
+        .query(
+            r#" select * from recharge_records where user_id in (select id from users where channel = $1) order by create_time desc limit $2 offset $3 "#,
+            &[&channel, &size, &(&(page - 1) * size)],
+        )
+        .await?;
+    let total = conn
+        .query_one(
+            r#" select count(*) from recharge_records where user_id in (select id from users where channel = $1) "#,
+            &[&channel],
+        )
+        .await?;
+
+    let total: i64 = total.get(0);
+
+    let rrs = rows.iter().map(|row| row.try_into().unwrap()).collect();
+    Ok(Page {
+        total,
+        page,
+        size,
+        data: rrs,
+    })
+}
