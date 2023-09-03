@@ -1,11 +1,11 @@
-use actix_web::{web, HttpResponse, Responder};
-use serde::Deserialize;
-
-use mtv_srv as srv;
-
-use crate::{middleware::{Me, AppId}, utils::res::Res};
-
 use super::PageQuery;
+use crate::{
+    middleware::{AppId, Me},
+    utils::res::Res,
+};
+use actix_web::{web, HttpResponse, Responder};
+use mtv_srv as srv;
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct LoginInfo {
@@ -13,15 +13,11 @@ pub struct LoginInfo {
     pub login_type: String, // mp or  weapp
 }
 
-pub async fn login(data: web::Json<LoginInfo>, appid:AppId) -> actix_web::Result<impl Responder> {
+pub async fn login(data: web::Json<LoginInfo>, appid: AppId) -> actix_web::Result<impl Responder> {
     log::debug!("login: {:?}", data);
-    let LoginInfo {
-        code,
-        login_type,
-    } = data.into_inner();
+    let LoginInfo { code, login_type } = data.into_inner();
 
     let appid = appid.get_appid()?;
-
 
     let token = srv::user::login(&appid, &code, &login_type).await?;
     log::debug!("login res: {:?}", token);

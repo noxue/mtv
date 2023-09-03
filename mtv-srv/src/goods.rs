@@ -5,7 +5,7 @@ use crate::Result;
 
 // // 添加订单
 // pub async fn add(user_id: i32, goods_id: i32) -> Result<Order> {
-//     let conn = Db::get_conn();
+//     let conn = Db::get_conn().await;
 
 //     // 获取商品信息
 //     let goods = mtv_dao::goods::get(&conn, goods_id).await?;
@@ -47,7 +47,7 @@ pub async fn add(
     expire_type: i32,
     expire_count: i32,
 ) -> Result<bool> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
 
     // 创建商品
     let ok = mtv_dao::goods::add(
@@ -72,21 +72,21 @@ pub async fn add(
 
 // 商品列表
 pub async fn list() -> Result<impl Serialize> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let goods = mtv_dao::goods::list(&conn).await?;
     Ok(goods)
 }
 
 // 根据商品id查询商品
 pub async fn get(id: i32) -> Result<impl Serialize> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let goods = mtv_dao::goods::get(&conn, id).await?;
     Ok(goods)
 }
 
 // 删除商品
 pub async fn delete(id: i32) -> Result<()> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     mtv_dao::goods::delete(&conn, id).await?;
     Ok(())
 }
@@ -103,7 +103,7 @@ pub async fn update(
     expire_type: i32,
     expire_count: i32,
 ) -> Result<()> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     mtv_dao::goods::update(
         &conn,
         id,

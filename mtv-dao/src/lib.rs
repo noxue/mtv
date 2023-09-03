@@ -7,7 +7,7 @@ use serde::Serialize;
 pub use sqlrs::{transaction, Db, Table};
 
 pub async fn up() {
-    let db = Db::get_conn();
+    let db = Db::get_conn().await;
 
     let modified = db
         // init.sql
@@ -19,7 +19,7 @@ pub async fn up() {
 }
 
 pub async fn down() {
-    let db = Db::get_conn();
+    let db = Db::get_conn().await;
 
     let modified = db.batch_execute(include_str!("../down.sql")).await;
 

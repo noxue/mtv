@@ -16,7 +16,7 @@ pub async fn add(
     price_total: i32,
     vlikes: i32,
 ) -> Result<Movie> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let movie =
         mtv_dao::movie::add(&conn, name, cover, description, tags, price_total, vlikes).await?;
     Ok(movie)
@@ -24,21 +24,21 @@ pub async fn add(
 
 /// 获取
 pub async fn get(id: i32) -> Result<Movie> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let movie = mtv_dao::movie::get(&conn, id).await?;
     Ok(movie)
 }
 
 /// 更新
 pub async fn update(id: i32, update_movie: &UpdateMovie) -> Result<Movie> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let m = mtv_dao::movie::update(&conn, id, update_movie).await?;
     Ok(m)
 }
 
 /// 删除
 pub async fn delete(id: i32) -> Result<()> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     mtv_dao::movie::delete(&conn, id).await?;
     Ok(())
 }
@@ -56,7 +56,7 @@ pub async fn list(
     update_time: Option<&String>,
     price: Option<&String>,
 ) -> Result<impl Serialize> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
 
     if tags.is_some() {
         let tags = tags.unwrap().split(",").map(|s| s.to_string()).collect();
@@ -101,7 +101,7 @@ pub async fn list(
 
 // 点赞，同时更新movie 和 vedio
 pub async fn like(user_id: i32, movie_id: i32, video_id: i32, is_like: bool) -> Result<()> {
-    let mut conn = Db::get_conn();
+    let mut conn = Db::get_conn().await;
     let likes = if is_like { 1 } else { -1 };
 
     let is_liked = mtv_dao::movie::video::is_liked(&conn, user_id, video_id).await?;
@@ -152,7 +152,7 @@ pub async fn like(user_id: i32, movie_id: i32, video_id: i32, is_like: bool) -> 
 
 // 追剧
 pub async fn follow(user_id: i32, movie_id: i32, is_follow: bool) -> Result<()> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
 
     let is_followed = mtv_dao::movie::video::is_followed(&conn, user_id, movie_id).await?;
 
@@ -185,14 +185,14 @@ pub async fn follow(user_id: i32, movie_id: i32, is_follow: bool) -> Result<()> 
 
 // 最近观看
 pub async fn recent_view(user_id: i32) -> Result<impl Serialize> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let movies = mtv_dao::movie::video::recent_view(&conn, user_id).await?;
     Ok(movies)
 }
 
 // 追剧列表
 pub async fn follow_list(user_id: i32) -> Result<impl Serialize> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let movies = mtv_dao::movie::video::follow_list(&conn, user_id).await?;
     Ok(movies)
 }

@@ -12,6 +12,14 @@ pub enum SrvError {
         #[snafu(source(from(Box<dyn std::error::Error>, Some)))]
         source: Option<Box<dyn std::error::Error>>,
     },
+    // 未登录或登录过期
+    #[snafu(display("-2 = 请先登录"))]
+    NotLogin,
+    
+    // 金币不足
+    #[snafu(display("-3 = 金币不足"))]
+    NotEnoughGold,
+
     #[snafu(display("{code} = {msg}"))]
     Custom { code: i32, msg: String },
 }

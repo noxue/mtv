@@ -1,7 +1,8 @@
 pub mod crud;
 
 pub use sqlrs_macros::Table;
-use std::sync::{Mutex, MutexGuard, Arc};
+use tokio::sync::{Mutex, MutexGuard};
+use std::sync::Arc;
 use tokio::sync::OnceCell;
 use tokio_postgres::{Client, NoTls};
 
@@ -90,17 +91,19 @@ impl Db {
         Ok(())
     }
 
-    pub fn get_conn() -> Conn {
+    pub async fn get_conn() -> Conn {
         let db = DB.get().expect("请先调用Db::init");
        
-       
-        let conn = match db.lock() {
-            Ok(conn) => conn,
-            Err(e) => {
-                log::error!("获取数据库连接出错:{}", e);
-                e.into_inner()
-            }
-        };
+        
+        let conn = db.lock().await;
+
+        // let conn = match db.lock() {
+        //     Ok(conn) => conn,
+        //     Err(e) => {
+        //         log::error!("获取数据库连接出错:{}", e);
+        //         e.into_inner()
+        //     }
+        // };
         Conn { conn }
     }
 }

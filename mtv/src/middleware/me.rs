@@ -33,7 +33,7 @@ impl FromRequest for Me {
         // http头获取token字段的值
         let token = match req.headers().get("token") {
             Some(token) => token.to_str().unwrap(),
-            None => return err("请先登录".into()),
+            None => return err(mtv_srv::SrvError::NotLogin),
         };
         match mtv_srv::user::get_uid(token.trim()).map(|id| Me { id }) {
             Ok(v) => ok(v),

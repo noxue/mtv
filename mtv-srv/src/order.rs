@@ -11,7 +11,7 @@ use crate::{
 
 // 添加订单
 pub async fn add(user_id: i32, goods_id: i32) -> Result<Order> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
 
     // 获取商品信息
     let goods = mtv_dao::goods::get(&conn, goods_id).await?;
@@ -44,21 +44,21 @@ pub async fn add(user_id: i32, goods_id: i32) -> Result<Order> {
 
 // 列出指定用户订单列表
 pub async fn list_by_user_id(user_id: i32, page: i64, size: i64) -> Result<Page<Vec<Order>>> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let page = mtv_dao::order::list_by_user_id(&conn, user_id, page, size).await?;
     Ok(page)
 }
 
 // 查看订单支付情况
 pub async fn check(order_no: &str) -> Result<i32> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let status = mtv_dao::order::get_status(&conn, order_no).await?;
     Ok(status)
 }
 
 // 根据订单号查看获取订单详情
 pub async fn get(order_no: &str) -> Result<Order> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
 
     let order = mtv_dao::order::get(&conn, order_no).await?;
 
@@ -71,7 +71,7 @@ pub async fn recharge_record_list(
     page: i64,
     size: i64,
 ) -> Result<Page<Vec<RechargeRecord>>> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let page = mtv_dao::order::recharge_record_list(&conn, user_id, page, size).await?;
     Ok(page)
 }
@@ -82,14 +82,14 @@ pub async fn consume_record_list(
     page: i64,
     size: i64,
 ) -> Result<Page<Vec<ConsumeRecord>>> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let page = mtv_dao::order::consume_record_list(&conn, user_id, page, size).await?;
     Ok(page)
 }
 
 // 支付订单
 pub async fn pay(order_no: &str, appid: &str, openid: &str) -> Result<impl Serialize> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
 
     // 获取订单信息
     let order = mtv_dao::order::get(&conn, order_no).await?;
@@ -120,7 +120,7 @@ pub async fn pay_notify(notify_data: WxPayNotify) -> Result<String> {
     let order_no = &data.out_trade_no;
 
     // 查询订单
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let order = mtv_dao::order::get(&conn, order_no).await?;
 
     // 如果已经支付，直接返回订单编号

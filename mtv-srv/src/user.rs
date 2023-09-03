@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{Result, SrvError};
 use anyhow::Context;
 use mtv_config::CONFIG;
 use mtv_dao::Db;
@@ -34,7 +34,7 @@ pub async fn login(appid: &str, code: &str, login_type: &str) -> Result<LoginRes
         return Err("openid和unionid都为空".into());
     }
 
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
 
     let user = match mtv_dao::user::get_by_unionid_or_openid(&conn, &unionid, &openid)
         .await
@@ -181,7 +181,7 @@ async fn login_mp(code: &str) -> Result<(String, String)> {
 
 // 设置手机号和密码
 pub async fn set_phone_and_password(uid: i32, phone: &str, password: &str) -> Result<()> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let password = bcrypt::hash(password, bcrypt::DEFAULT_COST).map_err(|e| {
         log::error!("密码加密出错:{:?}", e);
         "密码加密出错"
@@ -198,7 +198,7 @@ pub async fn set_phone_and_password(uid: i32, phone: &str, password: &str) -> Re
 
 // 根据手机号密码登录
 pub async fn login_phone(phone: &str, password: &str) -> Result<String> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let user = mtv_dao::user::get_by_phone(&conn, phone).await?;
     let encoded_password = user.auth.password.as_ref().ok_or("密码为空")?;
     let is_match = bcrypt::verify(password, encoded_password).map_err(|e| {
@@ -223,12 +223,12 @@ pub fn get_uid(token: &str) -> Result<i32> {
         .context("获取token链接出错")?
         .get(&key)
         .context("根据key获取uid出错")?;
-    Ok(uid.ok_or("token已过期")?)
+    Ok(uid.ok_or(SrvError::NotLogin)?)
 }
 
 /// 根据uid查询用户信息
 pub async fn get(uid: i32) -> Result<impl Serialize> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let user = mtv_dao::user::get(&conn, uid)
         .await
         .context("根据uid获取用户信息出错")?;
@@ -244,7 +244,7 @@ pub async fn get(uid: i32) -> Result<impl Serialize> {
 }
 
 pub async fn set_channel(uid: i32, channel: &str) -> Result<()> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     mtv_dao::user::set_channel(&conn, uid, channel)
         .await
         .context("设置用户渠道出错")?;
@@ -253,7 +253,7 @@ pub async fn set_channel(uid: i32, channel: &str) -> Result<()> {
 
 // 分页列出用户
 pub async fn list(page: i64, size: i64) -> Result<impl Serialize> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let users = mtv_dao::user::list(&conn, page, size).await?;
 
     Ok(users)
@@ -261,7 +261,7 @@ pub async fn list(page: i64, size: i64) -> Result<impl Serialize> {
 
 // 根据渠道列出用户
 pub async fn list_by_channel(channel: &str, page: i64, size: i64) -> Result<impl Serialize> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let users = mtv_dao::user::list_by_channel(&conn, channel, page, size).await?;
 
     Ok(users)

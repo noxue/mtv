@@ -1,11 +1,11 @@
+use crate::Result;
+use crate::SrvError::NotEnoughGold;
 use chrono::Local;
 use mtv_dao::{
     movie::video::{UpdateVideo, Video, VideoList},
     Db,
 };
 use serde::Serialize;
-
-use crate::Result;
 
 pub async fn add(
     movie_id: i32,
@@ -15,13 +15,13 @@ pub async fn add(
     status: i32,
     rank: i32,
 ) -> Result<Video> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let v = mtv_dao::movie::video::add(&conn, movie_id, name, video, price, status, rank).await?;
     Ok(v)
 }
 
 pub async fn list(movie_id: i32) -> Result<Vec<VideoList>> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let v = mtv_dao::movie::video::list(&conn, movie_id).await?;
     Ok(v)
 }
@@ -44,7 +44,7 @@ pub struct VideoWithLike {
     pub update_time: chrono::DateTime<Local>,
 }
 pub async fn get(video_id: i32, user_id: i32, is_admin: bool) -> Result<VideoWithLike> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let v = mtv_dao::movie::video::get(&conn, video_id).await?;
 
     if v.is_none() {
@@ -92,7 +92,12 @@ pub async fn get(video_id: i32, user_id: i32, is_admin: bool) -> Result<VideoWit
 
             // 如果会员到期了，就扣费
             if user.vip_expire_time < chrono::Local::now() {
-                mtv_dao::user::update_score(&conn, user_id, -v.price).await?;
+                if let Err(e) = mtv_dao::user::update_score(&conn, user_id, -v.price).await {
+                    if e.to_string().contains("金币不足") {
+                        return Err(NotEnoughGold.into());
+                    }
+                    return Err(e.into());
+                };
                 price = v.price; // 扣了多少记录下来
             }
 
@@ -115,14 +120,14 @@ pub async fn get(video_id: i32, user_id: i32, is_admin: bool) -> Result<VideoWit
 }
 
 pub async fn update(video_id: i32, update_video: &UpdateVideo) -> Result<Video> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     let v = mtv_dao::movie::video::update(&conn, video_id, update_video).await?;
     Ok(v)
 }
 
 // 删除
 pub async fn delete(video_id: i32) -> Result<()> {
-    let conn = Db::get_conn();
+    let conn = Db::get_conn().await;
     mtv_dao::movie::video::delete(&conn, video_id).await?;
     Ok(())
 }
