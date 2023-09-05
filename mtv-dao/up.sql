@@ -31,9 +31,8 @@ CREATE TABLE users (
 
 CREATE UNIQUE INDEX users_phone_uindex ON users ((auth ->> 'phone' :: text) varchar_pattern_ops);
 
-CREATE UNIQUE INDEX users_wechat_unionid_uindex ON users (
-    (auth ->> 'wechat_unionid' :: text) varchar_pattern_ops
-);
+-- 创建索引 允许为空字符串
+
 
 CREATE UNIQUE INDEX users_wechat_openid_uindex ON users (
     (auth ->> 'wechat_openid' :: text) varchar_pattern_ops
@@ -178,15 +177,16 @@ ALTER TABLE
 ADD
     CONSTRAINT consume_records_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
+-- 删除movie的时候不变
 ALTER TABLE
     consume_records
 ADD
-    CONSTRAINT consume_records_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id);
+    CONSTRAINT consume_records_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE;
 
 ALTER TABLE
     consume_records
 ADD
-    CONSTRAINT consume_records_video_id_fkey FOREIGN KEY (video_id) REFERENCES videos(id);
+    CONSTRAINT consume_records_video_id_fkey FOREIGN KEY (video_id) REFERENCES videos(id)  ON DELETE CASCADE;
 
 -- user_id 创建索引
 CREATE INDEX consume_records_user_id_index ON consume_records (user_id);
@@ -224,12 +224,12 @@ ADD
 ALTER TABLE
     view_records
 ADD
-    CONSTRAINT view_records_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id);
+    CONSTRAINT view_records_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id)  ON DELETE CASCADE;
 
 ALTER TABLE
     view_records
 ADD
-    CONSTRAINT view_records_video_id_fkey FOREIGN KEY (video_id) REFERENCES videos(id);
+    CONSTRAINT view_records_video_id_fkey FOREIGN KEY (video_id) REFERENCES videos(id)  ON DELETE CASCADE;
 
 /*
 点赞记录
@@ -252,7 +252,7 @@ ADD
 ALTER TABLE
     likes_records
 ADD
-    CONSTRAINT likes_records_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id);
+    CONSTRAINT likes_records_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id)  ON DELETE CASCADE;
 
 -- user_id 和 video_id 联合索引
 CREATE INDEX likes_records_user_id_video_id_index ON likes_records (user_id, video_id);
@@ -280,7 +280,7 @@ ADD
 ALTER TABLE
     follow_records
 ADD
-    CONSTRAINT follow_records_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id);
+    CONSTRAINT follow_records_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES movies(id)  ON DELETE CASCADE;
 
 /*
  订单表 orders

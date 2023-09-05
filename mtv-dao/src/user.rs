@@ -209,7 +209,7 @@ pub async fn set_phone_and_password(
             &[&json!(password), &userid],
         )
         .await?;
-    if m+n == 0 {
+    if m + n == 0 {
         anyhow::bail!("未找到用户");
     }
 
@@ -243,8 +243,8 @@ pub async fn get_by_unionid_or_openid(
 ) -> anyhow::Result<Option<User>> {
     let row = conn
         .query_opt(
-            r#" select * from users where auth->>'wechat_unionid' = $1 or auth->>'wechat_openid' = $2 "#,
-            &[&unionid, &openid],
+            r#"select * from users where auth->>'wechat_openid' = $1 or (auth->>'wechat_unionid' = $2 and auth->>'wechat_unionid' <> '')"#,
+            &[ &openid, &unionid],
         )
         .await?;
 

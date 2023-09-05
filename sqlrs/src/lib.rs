@@ -1,12 +1,10 @@
 pub mod crud;
-
 pub use sqlrs_macros::Table;
-use tokio::sync::{Mutex, MutexGuard};
-use std::sync::Arc;
 use tokio::sync::OnceCell;
+use tokio::sync::{Mutex, MutexGuard};
 use tokio_postgres::{Client, NoTls};
 
-static DB: OnceCell<Arc<Mutex<Db>>> = OnceCell::const_new();
+static DB: OnceCell<Mutex<Db>> = OnceCell::const_new();
 
 pub struct Conn {
     conn: MutexGuard<'static, Db>,
@@ -52,8 +50,6 @@ impl Conn {
     }
 }
 
-
-
 /// 事务宏
 /// 用法：
 /// transaction! {
@@ -86,24 +82,16 @@ impl Db {
             }
         });
 
-        DB.set(Arc::new(Mutex::new(Db { client })))
+        DB.set(Mutex::new(Db { client }))
             .expect("初始化函数只能调用一次");
         Ok(())
     }
 
     pub async fn get_conn() -> Conn {
         let db = DB.get().expect("请先调用Db::init");
-       
-        
+
         let conn = db.lock().await;
 
-        // let conn = match db.lock() {
-        //     Ok(conn) => conn,
-        //     Err(e) => {
-        //         log::error!("获取数据库连接出错:{}", e);
-        //         e.into_inner()
-        //     }
-        // };
         Conn { conn }
     }
 }
